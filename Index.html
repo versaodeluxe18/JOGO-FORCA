@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carregando Jogo da Forca</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #121212;
+      --panel: #1e1e1e;
+      --text: #f3f3f3;
+      --muted: #b3b3b3;
+      --accent: #00d084;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #1c1c1c, var(--bg));
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+    }
+
+    .loader {
+      width: min(92vw, 500px);
+      background: var(--panel);
+      border: 1px solid #2b2b2b;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.4rem;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: #2a2a2a;
+      overflow: hidden;
+    }
+
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #00a86b, var(--accent));
+      transition: width 0.2s ease;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main class="loader" aria-live="polite">
+    <h1>Preparando o jogo...</h1>
+    <p>Carregando arquivos iniciais para iniciar a experiência.</p>
+
+    <div class="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <div class="status">
+      <span id="status-text">Iniciando...</span>
+      <strong id="percent">0%</strong>
+    </div>
+  </main>
+
+  <script>
+    const progressBar = document.getElementById('progress');
+    const percentText = document.getElementById('percent');
+    const statusText = document.getElementById('status-text');
+    const progressWrap = document.querySelector('.progress-wrap');
+
+    const steps = [
+      { value: 20, text: 'Validando estrutura...' },
+      { value: 45, text: 'Conectando recursos do jogo...' },
+      { value: 70, text: 'Carregando interface...' },
+      { value: 90, text: 'Quase pronto...' },
+      { value: 100, text: 'Abrindo GAME/Inicio.html...' }
+    ];
+
+    let currentStep = 0;
+
+    function updateLoading() {
+      const step = steps[currentStep];
+      progressBar.style.width = `${step.value}%`;
+      percentText.textContent = `${step.value}%`;
+      statusText.textContent = step.text;
+      progressWrap.setAttribute('aria-valuenow', String(step.value));
+
+      currentStep += 1;
+      if (currentStep < steps.length) {
+        setTimeout(updateLoading, 350);
+      } else {
+        setTimeout(() => {
+          window.location.href = './GAME/Inicio.html';
+        }, 300);
+      }
+    }
+
+    updateLoading();
+  </script>
+</body>
+</html>
