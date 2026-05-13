@@ -242,7 +242,11 @@
         const HALL_TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9ewDO8amUzWyWKBraTWy9kOHAEtYqLDrpUwOF9ATyubXOCj4lPhZkkgkaSKDgfIDIEF9OFxX-hWiw/pub?gid=0&single=true&output=tsv";
         let hallRemainingSeconds = HALL_COUNTDOWN_SECONDS;
         let hallTimerInterval = null;
-        let pendingSolvedWords = [];
+        let pendingHallRound = {
+            startedAt: Date.now(),
+            closesAt: Date.now() + HALL_COUNTDOWN_SECONDS * 1000,
+            words: []
+        };
         let hallOfFameScores = JSON.parse(localStorage.getItem('hangman_hall_of_fame_scores')) || {};
 
         const wordDisplay = document.getElementById('word-display');
@@ -351,7 +355,7 @@
                 score += 100 + (maxMistakes - mistakes) * 10;
                 scoreDisplay.textContent = score;
                 nameContainer.classList.remove('hidden');
-                pendingSolvedWords.push(currentWord);
+                pendingHallRound.words.push({ value: currentWord, matched: false, matchedBy: null, matchedAt: null });
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
@@ -452,6 +456,11 @@
                 localStorage.removeItem('hangman_hall_of_fame_scores');
                 leaderboard = [];
                 hallOfFameScores = {};
+                pendingHallRound = {
+                    startedAt: Date.now(),
+                    closesAt: Date.now() + HALL_COUNTDOWN_SECONDS * 1000,
+                    words: []
+                };
                 renderRank();
             }
         }
@@ -460,6 +469,28 @@
             const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
             const seconds = String(totalSeconds % 60).padStart(2, '0');
             return `${minutes}:${seconds}`;
+        }
+
+        function normalizeText(text) {
+            return text
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toUpperCase()
+                .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function escapeRegex(text) {
+            return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function commentContainsWord(comment, word) {
+            const normalizedComment = normalizeText(comment);
+            const normalizedWord = normalizeText(word);
+            if (!normalizedComment || !normalizedWord) return false;
+            const pattern = new RegExp(`(?:^|\\s)${escapeRegex(normalizedWord)}(?:\\s|$)`, 'u');
+            return pattern.test(normalizedComment);
         }
 
         function parseRankCommentsFromTsv(tsvText) {
@@ -477,7 +508,7 @@
                                 break;
                             }
                         }
-                        comments.push({ user: cell, comment: comment.toUpperCase() });
+                        comments.push({ user: cell, comment, order: comments.length });
                     }
                 }
             }
@@ -485,24 +516,31 @@
         }
 
         async function processHallOfFameCycle() {
-            if (pendingSolvedWords.length === 0) return;
+            if (pendingHallRound.words.length === 0) return;
             try {
                 const response = await fetch(HALL_TSV_URL);
                 if (!response.ok) throw new Error("Falha ao carregar TSV");
                 const tsvText = await response.text();
                 const comments = parseRankCommentsFromTsv(tsvText);
-                const unresolvedWords = [...pendingSolvedWords];
+                const unresolvedWords = pendingHallRound.words.filter(word => !word.matched);
 
                 for (const item of comments) {
-                    const idx = unresolvedWords.findIndex(word => item.comment.includes(word));
+                    const idx = unresolvedWords.findIndex(word => commentContainsWord(item.comment, word.value));
                     if (idx !== -1) {
                         hallOfFameScores[item.user] = (hallOfFameScores[item.user] || 0) + 100;
+                        unresolvedWords[idx].matched = true;
+                        unresolvedWords[idx].matchedBy = item.user;
+                        unresolvedWords[idx].matchedAt = Date.now();
                         unresolvedWords.splice(idx, 1);
                         if (unresolvedWords.length === 0) break;
                     }
                 }
 
-                pendingSolvedWords = unresolvedWords;
+                pendingHallRound = {
+                    startedAt: Date.now(),
+                    closesAt: Date.now() + HALL_COUNTDOWN_SECONDS * 1000,
+                    words: []
+                };
                 localStorage.setItem('hangman_hall_of_fame_scores', JSON.stringify(hallOfFameScores));
                 renderRank();
             } catch (error) {
@@ -512,6 +550,8 @@
 
         function startHallCountdown() {
             hallRemainingSeconds = HALL_COUNTDOWN_SECONDS;
+            pendingHallRound.startedAt = Date.now();
+            pendingHallRound.closesAt = Date.now() + HALL_COUNTDOWN_SECONDS * 1000;
             hallTimer.textContent = formatRemainingTime(hallRemainingSeconds);
             if (hallTimerInterval) clearInterval(hallTimerInterval);
             hallTimerInterval = setInterval(async () => {
