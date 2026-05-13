@@ -104,9 +104,28 @@
         .animate-drop {
             animation: dropIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
+
+        .bot-cursor {
+            position: fixed;
+            width: 42px;
+            height: 42px;
+            border: 4px solid #111;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.15);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: left 1.2s ease-in-out, top 1.2s ease-in-out, transform 0.15s ease;
+        }
+
+        .bot-cursor.clicking {
+            transform: translate(-50%, -50%) scale(0.8);
+        }
     </style>
 </head>
 <body class="p-2 md:p-4">
+    <div id="bot-cursor" class="bot-cursor"></div>
 
     <!-- Header Reduzido -->
     <header class="mb-4 animate-drop w-full max-w-2xl">
@@ -211,6 +230,11 @@
         const maxMistakes = 6;
         let score = 0;
         let leaderboard = JSON.parse(localStorage.getItem('hangman_gamer_rank')) || [];
+        let correctPickChance = 0.05;
+        const initialCorrectPickChance = 0.05;
+        const chanceIncrementOnError = 0.10;
+        let autoPlayTimeout = null;
+        let isGameOver = false;
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -218,6 +242,7 @@
         const scoreDisplay = document.getElementById('current-score');
         const rankList = document.getElementById('rank-list');
         const modal = document.getElementById('game-modal');
+        const botCursor = document.getElementById('bot-cursor');
         const hangmanParts = [
             document.getElementById('head'),
             document.getElementById('body-line'),
@@ -251,12 +276,15 @@
             currentHint = randomEntry.hint;
             guessedLetters = [];
             mistakes = 0;
+            isGameOver = false;
+            correctPickChance = initialCorrectPickChance;
             modal.classList.add('hidden');
             document.getElementById('name-input-container').classList.add('hidden');
             hintText.textContent = currentHint;
             hangmanParts.forEach(part => part.classList.remove('visible'));
             document.querySelectorAll('.key').forEach(k => k.classList.remove('used'));
             updateWordDisplay();
+            scheduleAutoGuess();
         }
 
         function updateWordDisplay() {
@@ -281,9 +309,11 @@
             guessedLetters.push(char);
             element.classList.add('used');
             if (currentWord.includes(char)) {
+                correctPickChance = initialCorrectPickChance;
                 updateWordDisplay();
             } else {
                 mistakes++;
+                correctPickChance = Math.min(1, correctPickChance + chanceIncrementOnError);
                 if (mistakes <= maxMistakes) {
                     hangmanParts[mistakes - 1].classList.add('visible');
                 }
@@ -291,6 +321,8 @@
                     endGame(false);
                 }
             }
+
+            if (!isGameOver) scheduleAutoGuess();
         }
 
         function endGame(isWin) {
@@ -298,6 +330,8 @@
             const msg = document.getElementById('modal-message');
             const correctWordDisplay = document.getElementById('correct-word');
             const nameContainer = document.getElementById('name-input-container');
+            isGameOver = true;
+            clearTimeout(autoPlayTimeout);
             modal.classList.remove('hidden');
             correctWordDisplay.textContent = currentWord;
             if (isWin) {
@@ -311,6 +345,60 @@
                 title.className = "text-2xl font-bold mb-2 text-red-800";
                 if (score > 0) nameContainer.classList.remove('hidden');
             }
+        }
+
+        function getRandomDelayMs() {
+            const seconds = 5 + Math.random() * 15;
+            return Math.floor(seconds * 1000);
+        }
+
+        function getAvailableLetters() {
+            return [...document.querySelectorAll('.key')].filter(btn => !btn.classList.contains('used'));
+        }
+
+        function pickNextLetter() {
+            const availableButtons = getAvailableLetters();
+            if (availableButtons.length === 0) return null;
+
+            const correctButtons = availableButtons.filter(btn => currentWord.includes(btn.textContent));
+            const wrongButtons = availableButtons.filter(btn => !currentWord.includes(btn.textContent));
+            const shouldPickCorrect = Math.random() < correctPickChance;
+
+            let pool = availableButtons;
+            if (shouldPickCorrect && correctButtons.length > 0) pool = correctButtons;
+            if (!shouldPickCorrect && wrongButtons.length > 0) pool = wrongButtons;
+
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function moveBotCursorToElement(element, onArrive) {
+            const rect = element.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            botCursor.style.left = `${x}px`;
+            botCursor.style.top = `${y}px`;
+
+            setTimeout(() => {
+                botCursor.classList.add('clicking');
+                setTimeout(() => {
+                    botCursor.classList.remove('clicking');
+                    onArrive();
+                }, 140);
+            }, 1200);
+        }
+
+        function scheduleAutoGuess() {
+            clearTimeout(autoPlayTimeout);
+            if (isGameOver) return;
+            autoPlayTimeout = setTimeout(() => {
+                if (isGameOver || !modal.classList.contains('hidden')) return;
+                const targetButton = pickNextLetter();
+                if (!targetButton) return;
+                moveBotCursorToElement(targetButton, () => {
+                    if (isGameOver || targetButton.classList.contains('used')) return;
+                    handleGuess(targetButton.textContent, targetButton);
+                });
+            }, getRandomDelayMs());
         }
 
         function saveScore() {
