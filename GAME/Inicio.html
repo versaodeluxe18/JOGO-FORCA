@@ -178,7 +178,10 @@
             </div>
 
             <div class="paper-bg p-4 transform -rotate-1 flex-grow overflow-hidden flex flex-col">
-                <h2 class="text-lg font-bold mb-2 border-b-2 border-black uppercase">Hall of Fame</h2>
+                <div class="flex items-center justify-between gap-2 mb-2 border-b-2 border-black">
+                    <h2 class="text-lg font-bold uppercase">Hall of Fame</h2>
+                    <span id="hall-timer" class="text-xs font-bold">15:00</span>
+                </div>
                 <div id="rank-list" class="space-y-1 overflow-y-auto max-h-[150px]">
                     <p class="text-xs italic text-gray-500">Nenhum recorde ainda...</p>
                 </div>
@@ -235,6 +238,12 @@
         const chanceIncrementOnError = 0.10;
         let autoPlayTimeout = null;
         let isGameOver = false;
+        const HALL_COUNTDOWN_SECONDS = 900;
+        const HALL_TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9ewDO8amUzWyWKBraTWy9kOHAEtYqLDrpUwOF9ATyubXOCj4lPhZkkgkaSKDgfIDIEF9OFxX-hWiw/pub?gid=0&single=true&output=tsv";
+        let hallRemainingSeconds = HALL_COUNTDOWN_SECONDS;
+        let hallTimerInterval = null;
+        let pendingSolvedWords = [];
+        let hallOfFameScores = JSON.parse(localStorage.getItem('hangman_hall_of_fame_scores')) || {};
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -243,6 +252,7 @@
         const rankList = document.getElementById('rank-list');
         const modal = document.getElementById('game-modal');
         const botCursor = document.getElementById('bot-cursor');
+        const hallTimer = document.getElementById('hall-timer');
         const hangmanParts = [
             document.getElementById('head'),
             document.getElementById('body-line'),
@@ -255,6 +265,7 @@
         function init() {
             renderKeyboard();
             renderRank();
+            startHallCountdown();
             startNewGame();
         }
 
@@ -340,6 +351,7 @@
                 score += 100 + (maxMistakes - mistakes) * 10;
                 scoreDisplay.textContent = score;
                 nameContainer.classList.remove('hidden');
+                pendingSolvedWords.push(currentWord);
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
@@ -418,14 +430,18 @@
 
         function renderRank() {
             rankList.innerHTML = "";
-            if (leaderboard.length === 0) {
+            const hallEntries = Object.entries(hallOfFameScores)
+                .map(([name, points]) => ({ name, points }))
+                .sort((a, b) => b.points - a.points)
+                .slice(0, 10);
+            if (hallEntries.length === 0) {
                 rankList.innerHTML = `<p class="text-xs italic text-gray-500">Nenhum recorde ainda...</p>`;
                 return;
             }
-            leaderboard.forEach((entry, index) => {
+            hallEntries.forEach((entry, index) => {
                 const item = document.createElement('div');
                 item.className = "rank-item flex justify-between items-center";
-                item.innerHTML = `<span>${index + 1}. ${entry.name}</span><b>${entry.score}</b>`;
+                item.innerHTML = `<span>${index + 1}. ${entry.name}</span><b>${entry.points}</b>`;
                 rankList.appendChild(item);
             });
         }
@@ -433,9 +449,80 @@
         function resetRank() {
             if (confirm("Resetar ranking?")) {
                 localStorage.removeItem('hangman_gamer_rank');
+                localStorage.removeItem('hangman_hall_of_fame_scores');
                 leaderboard = [];
+                hallOfFameScores = {};
                 renderRank();
             }
+        }
+
+        function formatRemainingTime(totalSeconds) {
+            const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        }
+
+        function parseRankCommentsFromTsv(tsvText) {
+            const lines = tsvText.split(/\r?\n/);
+            const comments = [];
+            for (let i = 0; i < lines.length; i++) {
+                const rowCells = lines[i].split('\t').map(cell => cell.trim()).filter(Boolean);
+                for (const cell of rowCells) {
+                    if (cell.startsWith('@')) {
+                        let comment = "";
+                        for (let j = i + 1; j < lines.length; j++) {
+                            const nextCells = lines[j].split('\t').map(c => c.trim()).filter(Boolean);
+                            if (nextCells.length > 0) {
+                                comment = nextCells[0];
+                                break;
+                            }
+                        }
+                        comments.push({ user: cell, comment: comment.toUpperCase() });
+                    }
+                }
+            }
+            return comments;
+        }
+
+        async function processHallOfFameCycle() {
+            if (pendingSolvedWords.length === 0) return;
+            try {
+                const response = await fetch(HALL_TSV_URL);
+                if (!response.ok) throw new Error("Falha ao carregar TSV");
+                const tsvText = await response.text();
+                const comments = parseRankCommentsFromTsv(tsvText);
+                const unresolvedWords = [...pendingSolvedWords];
+
+                for (const item of comments) {
+                    const idx = unresolvedWords.findIndex(word => item.comment.includes(word));
+                    if (idx !== -1) {
+                        hallOfFameScores[item.user] = (hallOfFameScores[item.user] || 0) + 100;
+                        unresolvedWords.splice(idx, 1);
+                        if (unresolvedWords.length === 0) break;
+                    }
+                }
+
+                pendingSolvedWords = unresolvedWords;
+                localStorage.setItem('hangman_hall_of_fame_scores', JSON.stringify(hallOfFameScores));
+                renderRank();
+            } catch (error) {
+                console.error("Erro ao processar Hall of Fame:", error);
+            }
+        }
+
+        function startHallCountdown() {
+            hallRemainingSeconds = HALL_COUNTDOWN_SECONDS;
+            hallTimer.textContent = formatRemainingTime(hallRemainingSeconds);
+            if (hallTimerInterval) clearInterval(hallTimerInterval);
+            hallTimerInterval = setInterval(async () => {
+                hallRemainingSeconds--;
+                hallTimer.textContent = formatRemainingTime(Math.max(hallRemainingSeconds, 0));
+                if (hallRemainingSeconds <= 0) {
+                    clearInterval(hallTimerInterval);
+                    await processHallOfFameCycle();
+                    startHallCountdown();
+                }
+            }, 1000);
         }
 
         const originalStart = startNewGame;
