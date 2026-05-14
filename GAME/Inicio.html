@@ -105,6 +105,25 @@
             animation: dropIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
+
+        .hanging-modal {
+            transform: translateY(-135%);
+            transition: transform 0.45s ease-in-out;
+            pointer-events: none;
+        }
+
+        .hanging-modal.open {
+            transform: translateY(0);
+        }
+
+        .hanging-modal .rope {
+            width: 4px;
+            height: 95px;
+            background: linear-gradient(to bottom, #d9d1b4, #9b8d65);
+            margin-left: 26px;
+            box-shadow: 1px 0 1px rgba(0,0,0,0.25);
+        }
+
         .bot-cursor {
             position: fixed;
             width: 42px;
@@ -191,14 +210,12 @@
 
     </main>
 
-    <!-- Modal -->
-    <div id="game-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden p-4">
-        <div class="paper-bg p-6 max-w-sm w-full text-center transform rotate-1">
+    <!-- Painel de resultado pendurado -->
+    <div id="game-modal" class="hanging-modal fixed top-0 left-0 z-50 p-4" aria-live="polite">
+        <div class="rope" aria-hidden="true"></div>
+        <div class="paper-bg p-6 w-72 text-center transform rotate-1 pointer-events-auto">
             <h2 id="modal-title" class="text-2xl font-bold mb-2">FIM DE JOGO</h2>
             <p id="modal-message" class="mb-4 text-sm">A palavra era: <span id="correct-word" class="font-bold underline"></span></p>
-            <div id="name-input-container" class="hidden mb-4">
-                <input type="text" id="player-name" placeholder="Seu Nome/Nick" class="w-full p-2 border-2 border-black text-sm" maxlength="15">
-            </div>
             <button onclick="startNewGame()" class="bg-black text-white px-6 py-2 uppercase font-bold hover:bg-zinc-800 w-full">Próxima</button>
         </div>
     </div>
@@ -293,8 +310,7 @@
             mistakes = 0;
             isGameOver = false;
             correctPickChance = initialCorrectPickChance;
-            modal.classList.add('hidden');
-            document.getElementById('name-input-container').classList.add('hidden');
+            modal.classList.remove('open');
             hintText.textContent = currentHint;
             hangmanParts.forEach(part => part.classList.remove('visible'));
             document.querySelectorAll('.key').forEach(k => k.classList.remove('used'));
@@ -344,10 +360,9 @@
             const title = document.getElementById('modal-title');
             const msg = document.getElementById('modal-message');
             const correctWordDisplay = document.getElementById('correct-word');
-            const nameContainer = document.getElementById('name-input-container');
             isGameOver = true;
             clearTimeout(autoPlayTimeout);
-            modal.classList.remove('hidden');
+            modal.classList.add('open');
             correctWordDisplay.textContent = currentWord;
             pendingHallRound.words.push({ value: currentWord, matched: false, matchedBy: null, matchedAt: null });
             if (isWin) {
@@ -355,11 +370,9 @@
                 title.className = "text-2xl font-bold mb-2 text-green-800";
                 score += 100 + (maxMistakes - mistakes) * 10;
                 scoreDisplay.textContent = score;
-                nameContainer.classList.remove('hidden');
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
-                if (score > 0) nameContainer.classList.remove('hidden');
             }
         }
 
@@ -407,7 +420,7 @@
             clearTimeout(autoPlayTimeout);
             if (isGameOver) return;
             autoPlayTimeout = setTimeout(() => {
-                if (isGameOver || !modal.classList.contains('hidden')) return;
+                if (isGameOver) return;
                 const targetButton = pickNextLetter();
                 if (!targetButton) return;
                 moveBotCursorToElement(targetButton, () => {
@@ -416,22 +429,6 @@
                 });
             }, getRandomDelayMs());
         }
-
-        function saveScore() {
-            const nameInput = document.getElementById('player-name');
-            const name = nameInput.value.trim() || "Anônimo";
-            if (score > 0) {
-                leaderboard.push({ name, score, date: new Date().toLocaleDateString() });
-                leaderboard.sort((a, b) => b.score - a.score);
-                leaderboard = leaderboard.slice(0, 5);
-                localStorage.setItem('hangman_gamer_rank', JSON.stringify(leaderboard));
-                renderRank();
-            }
-            score = 0;
-            scoreDisplay.textContent = score;
-            nameInput.value = "";
-        }
-
         function renderRank() {
             rankList.innerHTML = "";
             const hallEntries = Object.entries(hallOfFameScores)
@@ -565,15 +562,10 @@
             }, 1000);
         }
 
-        const originalStart = startNewGame;
-        window.startNewGame = () => {
-            const nameContainer = document.getElementById('name-input-container');
-            if (!nameContainer.classList.contains('hidden')) saveScore();
-            originalStart();
-        };
+        window.startNewGame = startNewGame;
 
         window.onkeydown = (e) => {
-            if (modal.classList.contains('hidden')) {
+            if (!isGameOver) {
                 const key = e.key.toUpperCase();
                 if (/^[A-Z]$/.test(key)) {
                     const keys = document.querySelectorAll('.key');
@@ -584,7 +576,7 @@
                         }
                     }
                 }
-            } else if (e.key === "Enter") {
+            } else if (e.key === "Enter" && modal.classList.contains('open')) {
                 startNewGame();
             }
         };
