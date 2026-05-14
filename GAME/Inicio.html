@@ -349,13 +349,13 @@
             clearTimeout(autoPlayTimeout);
             modal.classList.remove('hidden');
             correctWordDisplay.textContent = currentWord;
+            pendingHallRound.words.push({ value: currentWord, matched: false, matchedBy: null, matchedAt: null });
             if (isWin) {
                 title.textContent = "VITÓRIA!";
                 title.className = "text-2xl font-bold mb-2 text-green-800";
                 score += 100 + (maxMistakes - mistakes) * 10;
                 scoreDisplay.textContent = score;
                 nameContainer.classList.remove('hidden');
-                pendingHallRound.words.push({ value: currentWord, matched: false, matchedBy: null, matchedAt: null });
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
