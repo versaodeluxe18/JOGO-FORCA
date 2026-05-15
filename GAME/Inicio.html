@@ -107,21 +107,67 @@
 
 
         .hanging-modal {
-            transform: translateY(-135%);
-            transition: transform 0.45s ease-in-out;
             pointer-events: none;
+            perspective: 900px;
         }
 
-        .hanging-modal.open {
-            transform: translateY(0);
+        .hanging-modal .hanging-assembly {
+            transform: translateY(-135vh) rotateX(20deg) rotateZ(-4deg);
+            transform-origin: top center;
+            opacity: 0;
+        }
+
+        .hanging-modal.open .hanging-assembly {
+            animation: panelDrop3d 0.82s cubic-bezier(0.2, 0.9, 0.25, 1.15) forwards;
+        }
+
+        .hanging-modal.closing .hanging-assembly {
+            animation: panelRise3d 0.5s cubic-bezier(0.55, 0.02, 0.95, 0.3) forwards;
         }
 
         .hanging-modal .rope {
             width: 4px;
             height: 95px;
             background: linear-gradient(to bottom, #d9d1b4, #9b8d65);
-            margin-left: 26px;
+            margin: 0 auto;
             box-shadow: 1px 0 1px rgba(0,0,0,0.25);
+        }
+
+        .hanging-modal .panel-board {
+            box-shadow: 8px 12px 22px rgba(0,0,0,0.26), 4px 4px 0px rgba(0,0,0,0.2), inset 2px 2px 10px rgba(0,0,0,0.05);
+            transform-origin: top center;
+        }
+
+        @keyframes panelDrop3d {
+            0% {
+                transform: translateY(-135vh) rotateX(20deg) rotateZ(-4deg) scale(0.92);
+                opacity: 0;
+            }
+            58% {
+                transform: translateY(16px) rotateX(-8deg) rotateZ(1.4deg) scale(1.02);
+                opacity: 1;
+            }
+            78% {
+                transform: translateY(-6px) rotateX(4deg) rotateZ(-0.6deg) scale(0.995);
+            }
+            100% {
+                transform: translateY(0) rotateX(0deg) rotateZ(0deg) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes panelRise3d {
+            0% {
+                transform: translateY(0) rotateX(0deg) rotateZ(0deg) scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: translateY(4px) rotateX(-6deg) rotateZ(0.8deg) scale(1.01);
+            }
+            100% {
+                transform: translateY(-140vh) rotateX(22deg) rotateZ(-4deg) scale(0.9);
+                opacity: 0;
+            }
         }
 
         .bot-cursor {
@@ -212,11 +258,13 @@
 
     <!-- Painel de resultado pendurado -->
     <div id="game-modal" class="hanging-modal fixed top-0 left-0 z-50 p-4" aria-live="polite">
-        <div class="rope" aria-hidden="true"></div>
-        <div class="paper-bg p-6 w-72 text-center transform rotate-1 pointer-events-auto">
-            <h2 id="modal-title" class="text-2xl font-bold mb-2">FIM DE JOGO</h2>
-            <p id="modal-message" class="mb-4 text-sm">A palavra era: <span id="correct-word" class="font-bold underline"></span></p>
-            <button onclick="startNewGame()" class="bg-black text-white px-6 py-2 uppercase font-bold hover:bg-zinc-800 w-full">Próxima</button>
+        <div class="hanging-assembly w-72">
+            <div class="rope" aria-hidden="true"></div>
+            <div class="panel-board paper-bg p-6 w-72 text-center pointer-events-auto">
+                <h2 id="modal-title" class="text-2xl font-bold mb-2">FIM DE JOGO</h2>
+                <p id="modal-message" class="mb-4 text-sm">A palavra era: <span id="correct-word" class="font-bold underline"></span></p>
+                <button onclick="startNewGame()" class="bg-black text-white px-6 py-2 uppercase font-bold hover:bg-zinc-800 w-full">Próxima</button>
+            </div>
         </div>
     </div>
 
@@ -311,6 +359,7 @@
             isGameOver = false;
             correctPickChance = initialCorrectPickChance;
             modal.classList.remove('open');
+            modal.classList.add('closing');
             hintText.textContent = currentHint;
             hangmanParts.forEach(part => part.classList.remove('visible'));
             document.querySelectorAll('.key').forEach(k => k.classList.remove('used'));
@@ -362,6 +411,7 @@
             const correctWordDisplay = document.getElementById('correct-word');
             isGameOver = true;
             clearTimeout(autoPlayTimeout);
+            modal.classList.remove('closing');
             modal.classList.add('open');
             correctWordDisplay.textContent = currentWord;
             pendingHallRound.words.push({ value: currentWord, matched: false, matchedBy: null, matchedAt: null });
