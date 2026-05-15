@@ -302,6 +302,7 @@
         const initialCorrectPickChance = 0.05;
         const chanceIncrementOnError = 0.10;
         let autoPlayTimeout = null;
+        let autoContinueModalTimeout = null;
         let isGameOver = false;
         const HALL_COUNTDOWN_SECONDS = 900;
         const HALL_TSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9ewDO8amUzWyWKBraTWy9kOHAEtYqLDrpUwOF9ATyubXOCj4lPhZkkgkaSKDgfIDIEF9OFxX-hWiw/pub?gid=0&single=true&output=tsv";
@@ -358,6 +359,7 @@
             mistakes = 0;
             isGameOver = false;
             correctPickChance = initialCorrectPickChance;
+            clearTimeout(autoContinueModalTimeout);
             modal.classList.remove('open');
             modal.classList.add('closing');
             hintText.textContent = currentHint;
@@ -415,6 +417,7 @@
             modal.classList.add('open');
             correctWordDisplay.textContent = currentWord;
             pendingHallRound.words.push({ value: currentWord, matched: false, matchedBy: null, matchedAt: null });
+            scheduleAutoContinueModal();
             if (isWin) {
                 title.textContent = "VITÓRIA!";
                 title.className = "text-2xl font-bold mb-2 text-green-800";
@@ -464,6 +467,20 @@
                     onArrive();
                 }, 140);
             }, 1200);
+        }
+
+
+        function scheduleAutoContinueModal() {
+            clearTimeout(autoContinueModalTimeout);
+            autoContinueModalTimeout = setTimeout(() => {
+                if (!isGameOver || !modal.classList.contains('open')) return;
+                const nextButton = modal.querySelector('button');
+                if (!nextButton) return;
+                moveBotCursorToElement(nextButton, () => {
+                    if (!isGameOver || !modal.classList.contains('open')) return;
+                    nextButton.click();
+                });
+            }, 5000);
         }
 
         function scheduleAutoGuess() {
