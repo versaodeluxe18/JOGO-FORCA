@@ -170,6 +170,35 @@
             }
         }
 
+        #music-control-btn {
+            background: linear-gradient(145deg, #f8f8f8, #d7d7d7);
+            border: 2px solid var(--ink-black);
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2), inset 1px 1px 4px rgba(255,255,255,0.6);
+            transform: rotate(-2deg);
+        }
+
+        #music-control-btn:hover {
+            transform: rotate(2deg) scale(1.06);
+        }
+
+        #music-volume-panel.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1) rotate(-1deg);
+            animation: panelPulse 0.35s ease;
+        }
+
+        #music-volume-slider {
+            accent-color: #1a1a1a;
+            cursor: pointer;
+        }
+
+        @keyframes panelPulse {
+            0% { transform: translateY(-8px) scale(0.95) rotate(-3deg); }
+            70% { transform: translateY(1px) scale(1.01) rotate(1deg); }
+            100% { transform: translateY(0) scale(1) rotate(-1deg); }
+        }
+
         .bot-cursor {
             position: fixed;
             width: 42px;
@@ -196,10 +225,16 @@
         type="button"
         class="fixed top-3 right-3 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition"
         aria-label="Controlar volume da música de fundo"
-        title="Música: 10%"
+        title="Música: 5%"
     >
         🔊
     </button>
+
+    <div id="music-volume-panel" class="fixed top-16 right-3 z-50 paper-bg p-2 w-40 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+        <label for="music-volume-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Volume</label>
+        <input id="music-volume-slider" type="range" min="0" max="100" step="1" value="5" class="w-full">
+        <p id="music-volume-value" class="text-[10px] mt-1 text-right font-bold">5%</p>
+    </div>
 
     <!-- Header Reduzido -->
     <header class="mb-4 animate-drop w-full max-w-2xl">
@@ -333,10 +368,8 @@
             "musica/Singularity - The Grey Room _ Density & Time.mp3"
         ];
         const backgroundAudio = new Audio();
-        backgroundAudio.volume = 0.1;
+        backgroundAudio.volume = 0.05;
         let currentTrackIndex = 0;
-        const volumeLevels = [0, 0.1, 0.25, 0.5];
-        let currentVolumeLevelIndex = 1;
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -347,6 +380,9 @@
         const botCursor = document.getElementById('bot-cursor');
         const hallTimer = document.getElementById('hall-timer');
         const musicControlBtn = document.getElementById('music-control-btn');
+        const musicVolumePanel = document.getElementById('music-volume-panel');
+        const musicVolumeSlider = document.getElementById('music-volume-slider');
+        const musicVolumeValue = document.getElementById('music-volume-value');
         const hangmanParts = [
             document.getElementById('head'),
             document.getElementById('body-line'),
@@ -369,6 +405,8 @@
             musicControlBtn.textContent = volumePercent === 0 ? "🔇" : "🔊";
             musicControlBtn.title = `Música: ${volumePercent}%`;
             musicControlBtn.setAttribute('aria-label', `Volume da música em ${volumePercent}%`);
+            musicVolumeSlider.value = volumePercent;
+            musicVolumeValue.textContent = `${volumePercent}%`;
         }
 
         function setupBackgroundMusic() {
@@ -381,10 +419,19 @@
             });
 
             musicControlBtn.onclick = () => {
-                currentVolumeLevelIndex = (currentVolumeLevelIndex + 1) % volumeLevels.length;
-                backgroundAudio.volume = volumeLevels[currentVolumeLevelIndex];
-                updateMusicButtonLabel();
+                musicVolumePanel.classList.toggle('open');
             };
+
+            musicVolumeSlider.addEventListener('input', (event) => {
+                backgroundAudio.volume = Number(event.target.value) / 100;
+                updateMusicButtonLabel();
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!musicVolumePanel.contains(event.target) && event.target !== musicControlBtn) {
+                    musicVolumePanel.classList.remove('open');
+                }
+            });
 
             updateMusicButtonLabel();
             backgroundAudio.play().catch(() => {
