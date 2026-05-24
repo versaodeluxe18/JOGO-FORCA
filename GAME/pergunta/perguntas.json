@@ -1,20 +1,474 @@
 [
-  { "pergunta": "Blocos e sobrevivência", "resposta": "MINECRAFT" },
-  { "pergunta": "Protagonista de God of War", "resposta": "KRATOS" },
-  { "pergunta": "Criadora do Mario", "resposta": "NINTENDO" },
-  { "pergunta": "Console da Sony", "resposta": "PLAYSTATION" },
-  { "pergunta": "Venceu o GOTY em 2022", "resposta": "ELDERING" },
-  { "pergunta": "A princesa que precisa ser salva", "resposta": "ZELDA" },
-  { "pergunta": "Samus Aran é a protagonista", "resposta": "METROID" },
-  { "pergunta": "Battle Royale famoso por construir", "resposta": "FORNITE" },
-  { "pergunta": "Master Chief é o ícone da Xbox", "resposta": "HALO" },
-  { "pergunta": "Comedor de pastilhas amarelo", "resposta": "PACMAN" },
-  { "pergunta": "Plataforma de jogos criada por usuários", "resposta": "ROBLOX" },
-  { "pergunta": "Geralt de Rivia é o protagonista", "resposta": "WITCHER" },
-  { "pergunta": "Hero Shooter da Blizzard", "resposta": "OVERWATCH" },
-  { "pergunta": "FPS tático da Riot Games", "resposta": "VALORANT" },
-  { "pergunta": "RPG de ação em mundo aberto gratuito", "resposta": "GENSHIN" },
-  { "pergunta": "O ouriço mais rápido do mundo", "resposta": "SONIC" },
-  { "pergunta": "O Pokémon mais famoso", "resposta": "PIKACHU" },
-  { "pergunta": "Portátil clássico dos anos 90", "resposta": "GAMEBOY" }
+  {
+    "pergunta": "Blocos e sobrevivência",
+    "resposta": "MINECRAFT"
+  },
+  {
+    "pergunta": "Protagonista de God of War",
+    "resposta": "KRATOS"
+  },
+  {
+    "pergunta": "Criadora do Mario",
+    "resposta": "NINTENDO"
+  },
+  {
+    "pergunta": "Console da Sony",
+    "resposta": "PLAYSTATION"
+  },
+  {
+    "pergunta": "Venceu o GOTY em 2022",
+    "resposta": "ELDERING"
+  },
+  {
+    "pergunta": "A princesa que precisa ser salva",
+    "resposta": "ZELDA"
+  },
+  {
+    "pergunta": "Samus Aran é a protagonista",
+    "resposta": "METROID"
+  },
+  {
+    "pergunta": "Battle Royale famoso por construir",
+    "resposta": "FORNITE"
+  },
+  {
+    "pergunta": "Master Chief é o ícone da Xbox",
+    "resposta": "HALO"
+  },
+  {
+    "pergunta": "Comedor de pastilhas amarelo",
+    "resposta": "PACMAN"
+  },
+  {
+    "pergunta": "Plataforma de jogos criada por usuários",
+    "resposta": "ROBLOX"
+  },
+  {
+    "pergunta": "Geralt de Rivia é o protagonista",
+    "resposta": "WITCHER"
+  },
+  {
+    "pergunta": "Hero Shooter da Blizzard",
+    "resposta": "OVERWATCH"
+  },
+  {
+    "pergunta": "FPS tático da Riot Games",
+    "resposta": "VALORANT"
+  },
+  {
+    "pergunta": "RPG de ação em mundo aberto gratuito",
+    "resposta": "GENSHIN"
+  },
+  {
+    "pergunta": "O ouriço mais rápido do mundo",
+    "resposta": "SONIC"
+  },
+  {
+    "pergunta": "O Pokémon mais famoso",
+    "resposta": "PIKACHU"
+  },
+  {
+    "pergunta": "Portátil clássico dos anos 90",
+    "resposta": "GAMEBOY"
+  },
+  {
+    "pergunta": "Mascote da Sega",
+    "resposta": "SONIC"
+  },
+  {
+    "pergunta": "Encanador da Nintendo",
+    "resposta": "MARIO"
+  },
+  {
+    "pergunta": "Irmão do Mario de roupa verde",
+    "resposta": "LUIGI"
+  },
+  {
+    "pergunta": "Princesa do Reino dos Cogumelos",
+    "resposta": "PEACH"
+  },
+  {
+    "pergunta": "Vilão clássico do Mario",
+    "resposta": "BOWSER"
+  },
+  {
+    "pergunta": "Caçadora espacial da Nintendo",
+    "resposta": "SAMUS"
+  },
+  {
+    "pergunta": "Herói de Hyrule",
+    "resposta": "LINK"
+  },
+  {
+    "pergunta": "Rei dos Koopas",
+    "resposta": "BOWSER"
+  },
+  {
+    "pergunta": "Rival azul do Mega Man",
+    "resposta": "BASS"
+  },
+  {
+    "pergunta": "Androide caçador de Mavericks",
+    "resposta": "X"
+  },
+  {
+    "pergunta": "Empresa criadora do Xbox",
+    "resposta": "MICROSOFT"
+  },
+  {
+    "pergunta": "Plataforma da Valve para PC",
+    "resposta": "STEAM"
+  },
+  {
+    "pergunta": "Battle Royale da Respawn",
+    "resposta": "APEX"
+  },
+  {
+    "pergunta": "Jogo de blocos da Mojang",
+    "resposta": "MINECRAFT"
+  },
+  {
+    "pergunta": "Modo popular de GTA V",
+    "resposta": "ONLINE"
+  },
+  {
+    "pergunta": "Protagonista de The Last of Us",
+    "resposta": "JOEL"
+  },
+  {
+    "pergunta": "Parceira de Joel",
+    "resposta": "ELLIE"
+  },
+  {
+    "pergunta": "Anti-herói de Red Dead Redemption",
+    "resposta": "MARSTON"
+  },
+  {
+    "pergunta": "Protagonista de Red Dead Redemption 2",
+    "resposta": "ARTHUR"
+  },
+  {
+    "pergunta": "Companhia dona de PlayStation",
+    "resposta": "SONY"
+  },
+  {
+    "pergunta": "Criadora de The Witcher",
+    "resposta": "CDPROJEKT"
+  },
+  {
+    "pergunta": "Jogo da FromSoftware com Tarnished",
+    "resposta": "ELDENRING"
+  },
+  {
+    "pergunta": "Diretor de Metal Gear",
+    "resposta": "KOJIMA"
+  },
+  {
+    "pergunta": "Série de luta da Capcom",
+    "resposta": "STREETFIGHTER"
+  },
+  {
+    "pergunta": "Shoryuken é golpe de qual personagem",
+    "resposta": "RYU"
+  },
+  {
+    "pergunta": "Ninja amarelo de Mortal Kombat",
+    "resposta": "SCORPION"
+  },
+  {
+    "pergunta": "Ninja azul de Mortal Kombat",
+    "resposta": "SUBZERO"
+  },
+  {
+    "pergunta": "Vilão principal de Sephiroth aparece em",
+    "resposta": "FINALFANTASY"
+  },
+  {
+    "pergunta": "Plataforma da Epic Games",
+    "resposta": "EPIC"
+  },
+  {
+    "pergunta": "Jogo de cartas da Blizzard",
+    "resposta": "HEARTHSTONE"
+  },
+  {
+    "pergunta": "MOBA da Valve",
+    "resposta": "DOTA"
+  },
+  {
+    "pergunta": "MOBA mais famoso da Riot",
+    "resposta": "LEAGUE"
+  },
+  {
+    "pergunta": "Sigla de League of Legends",
+    "resposta": "LOL"
+  },
+  {
+    "pergunta": "Atirador tático da Ubisoft",
+    "resposta": "RAINBOWSIX"
+  },
+  {
+    "pergunta": "Expansão de WoW lançada em 2022",
+    "resposta": "DRAGONFLIGHT"
+  },
+  {
+    "pergunta": "Região inicial de Pokémon Red",
+    "resposta": "KANTO"
+  },
+  {
+    "pergunta": "Região de Pokémon Gold",
+    "resposta": "JOHTO"
+  },
+  {
+    "pergunta": "Cidade inicial de Pallet em português",
+    "resposta": "PALETA"
+  },
+  {
+    "pergunta": "Professor inicial de Pokémon Kanto",
+    "resposta": "OAK"
+  },
+  {
+    "pergunta": "Bola usada para capturar Pokémon",
+    "resposta": "POKEBOLA"
+  },
+  {
+    "pergunta": "RPG famoso da Bethesda no espaço",
+    "resposta": "STARFIELD"
+  },
+  {
+    "pergunta": "Série de corrida da Playground Games",
+    "resposta": "FORZA"
+  },
+  {
+    "pergunta": "Simulador de futebol da EA",
+    "resposta": "FC"
+  },
+  {
+    "pergunta": "Antigo nome do EA FC",
+    "resposta": "FIFA"
+  },
+  {
+    "pergunta": "Jogo sandbox da Garry",
+    "resposta": "GARRYSMOD"
+  },
+  {
+    "pergunta": "Jogo de terror com animatrônicos",
+    "resposta": "FNAF"
+  },
+  {
+    "pergunta": "Criador de Stardew Valley",
+    "resposta": "BARONE"
+  },
+  {
+    "pergunta": "Fazenda e vila em pixel art",
+    "resposta": "STARDEW"
+  },
+  {
+    "pergunta": "Roguelike da Supergiant com Zagreus",
+    "resposta": "HADES"
+  },
+  {
+    "pergunta": "Jogo de cartas com Geralt",
+    "resposta": "GWENT"
+  },
+  {
+    "pergunta": "Jogo de ritmo com flechas",
+    "resposta": "DDR"
+  },
+  {
+    "pergunta": "Jogo musical da Harmonix com guitarras",
+    "resposta": "GUITARHERO"
+  },
+  {
+    "pergunta": "Corrida de kart da Nintendo",
+    "resposta": "MARIOKART"
+  },
+  {
+    "pergunta": "Macaco da Nintendo com gravata",
+    "resposta": "DONKEYKONG"
+  },
+  {
+    "pergunta": "Caçador de tesouros de Uncharted",
+    "resposta": "DRAKE"
+  },
+  {
+    "pergunta": "Companheira de Ratchet",
+    "resposta": "CLANK"
+  },
+  {
+    "pergunta": "Lombax protagonista da Insomniac",
+    "resposta": "RATCHET"
+  },
+  {
+    "pergunta": "Jogo indie de cavaleiro inseto",
+    "resposta": "HOLLOWKNIGHT"
+  },
+  {
+    "pergunta": "Estúdio de Hollow Knight",
+    "resposta": "TEAMCHERRY"
+  },
+  {
+    "pergunta": "Protagonista de Celeste",
+    "resposta": "MADELINE"
+  },
+  {
+    "pergunta": "Jogo de construção de fábrica da Wube",
+    "resposta": "FACTORIO"
+  },
+  {
+    "pergunta": "Jogo automático de sobrevivência de vampiros",
+    "resposta": "VAMPIRESURVIVORS"
+  },
+  {
+    "pergunta": "Jogo de impostor no espaço",
+    "resposta": "AMONGUS"
+  },
+  {
+    "pergunta": "Criadora de Among Us",
+    "resposta": "INNERSLOTH"
+  },
+  {
+    "pergunta": "Jogo de sobrevivência em oceano",
+    "resposta": "SUBNAUTICA"
+  },
+  {
+    "pergunta": "Cidade de Resident Evil 2",
+    "resposta": "RACCOONCITY"
+  },
+  {
+    "pergunta": "Protagonista feminina de Tomb Raider",
+    "resposta": "LARA"
+  },
+  {
+    "pergunta": "Aventureiro de chapéu e chicote",
+    "resposta": "INDIANA"
+  },
+  {
+    "pergunta": "Série de tiro com Chainsaw Gun",
+    "resposta": "GEARSOFWAR"
+  },
+  {
+    "pergunta": "Mascote da Xbox em Halo",
+    "resposta": "CHIEF"
+  },
+  {
+    "pergunta": "Plataforma de streaming roxa",
+    "resposta": "TWITCH"
+  },
+  {
+    "pergunta": "Site de vídeos de gameplay",
+    "resposta": "YOUTUBE"
+  },
+  {
+    "pergunta": "Empresa dona da Blizzard",
+    "resposta": "ACTIVISION"
+  },
+  {
+    "pergunta": "Dev de Half Life",
+    "resposta": "VALVE"
+  },
+  {
+    "pergunta": "Sequel famosa de Portal",
+    "resposta": "PORTAL2"
+  },
+  {
+    "pergunta": "Companheira robô de Portal",
+    "resposta": "GLADOS"
+  },
+  {
+    "pergunta": "Jogo de dedução social do celular",
+    "resposta": "WEREWOLF"
+  },
+  {
+    "pergunta": "Battle Royale mobile da Krafton",
+    "resposta": "NEWSTATE"
+  },
+  {
+    "pergunta": "Shooter com agentes e habilidades",
+    "resposta": "VALORANT"
+  },
+  {
+    "pergunta": "Modo clássico de Counter Strike",
+    "resposta": "BOMBA"
+  },
+  {
+    "pergunta": "Série de terror com pirâmide",
+    "resposta": "SILENTHILL"
+  },
+  {
+    "pergunta": "Jogo de terror com Alan",
+    "resposta": "WAKE"
+  },
+  {
+    "pergunta": "Dev de Control e Alan Wake",
+    "resposta": "REMEDY"
+  },
+  {
+    "pergunta": "Série de RPG com Fus Ro Dah",
+    "resposta": "SKYRIM"
+  },
+  {
+    "pergunta": "Série de estratégia por turnos de Sid Meier",
+    "resposta": "CIVILIZATION"
+  },
+  {
+    "pergunta": "Jogo 4X no espaço da Paradox",
+    "resposta": "STELLARIS"
+  },
+  {
+    "pergunta": "Simulador de cidade da Colossal Order",
+    "resposta": "CITIESSKYLINES"
+  },
+  {
+    "pergunta": "RPG tático da Larian de 2023",
+    "resposta": "BALDURSGATE"
+  },
+  {
+    "pergunta": "Estúdio de Baldurs Gate 3",
+    "resposta": "LARIAN"
+  },
+  {
+    "pergunta": "Jogo de exploração procedural da Hello Games",
+    "resposta": "NOMANSSKY"
+  },
+  {
+    "pergunta": "Jogo cooperativo de cozinhar",
+    "resposta": "OVERCOOKED"
+  },
+  {
+    "pergunta": "Jogo de mudança de fase temporal da Valve",
+    "resposta": "TIMESHIFT"
+  },
+  {
+    "pergunta": "Jogo de luta da Bandai com Kazuya",
+    "resposta": "TEKKEN"
+  },
+  {
+    "pergunta": "Jogo de luta com fatalities",
+    "resposta": "MORTALKOMBAT"
+  },
+  {
+    "pergunta": "Jogo de tiro com saque e extração da Bungie",
+    "resposta": "DESTINY"
+  },
+  {
+    "pergunta": "Jogo de plataforma com crash de caixas",
+    "resposta": "CRASH"
+  },
+  {
+    "pergunta": "Dragão roxo da Insomniac",
+    "resposta": "SPYRO"
+  },
+  {
+    "pergunta": "Jogo de corrida arcade da EA com burnout",
+    "resposta": "BURNOUT"
+  },
+  {
+    "pergunta": "Jogo de ritmo com tambores japoneses",
+    "resposta": "TAIKO"
+  },
+  {
+    "pergunta": "Jogo mobile de estratégia com clãs",
+    "resposta": "CLASHOFCLANS"
+  }
 ]
