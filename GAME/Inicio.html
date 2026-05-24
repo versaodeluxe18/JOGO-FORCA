@@ -191,6 +191,15 @@
 </head>
 <body class="p-2 md:p-4">
     <div id="bot-cursor" class="bot-cursor"></div>
+    <button
+        id="music-control-btn"
+        type="button"
+        class="fixed top-3 right-3 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition"
+        aria-label="Controlar volume da música de fundo"
+        title="Música: 10%"
+    >
+        🔊
+    </button>
 
     <!-- Header Reduzido -->
     <header class="mb-4 animate-drop w-full max-w-2xl">
@@ -314,6 +323,20 @@
             words: []
         };
         let hallOfFameScores = JSON.parse(localStorage.getItem('hangman_hall_of_fame_scores')) || {};
+        const backgroundTracks = [
+            "musica/Viral Bliss, Im Uncomfortable - Ryan Stasik.mp3",
+            "musica/Event Horizon - The Grey Room _ Density & Time.mp3",
+            "musica/Rain Over Kyoto Station - The Mini Vandals.mp3",
+            "musica/Limousines - TrackTribe.mp3",
+            "musica/Helium - TrackTribe.mp3",
+            "musica/Colony - TrackTribe.mp3",
+            "musica/Singularity - The Grey Room _ Density & Time.mp3"
+        ];
+        const backgroundAudio = new Audio();
+        backgroundAudio.volume = 0.1;
+        let currentTrackIndex = 0;
+        const volumeLevels = [0, 0.1, 0.25, 0.5];
+        let currentVolumeLevelIndex = 1;
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -323,6 +346,7 @@
         const modal = document.getElementById('game-modal');
         const botCursor = document.getElementById('bot-cursor');
         const hallTimer = document.getElementById('hall-timer');
+        const musicControlBtn = document.getElementById('music-control-btn');
         const hangmanParts = [
             document.getElementById('head'),
             document.getElementById('body-line'),
@@ -336,7 +360,38 @@
             renderKeyboard();
             renderRank();
             startHallCountdown();
+            setupBackgroundMusic();
             startNewGame();
+        }
+
+        function updateMusicButtonLabel() {
+            const volumePercent = Math.round(backgroundAudio.volume * 100);
+            musicControlBtn.textContent = volumePercent === 0 ? "🔇" : "🔊";
+            musicControlBtn.title = `Música: ${volumePercent}%`;
+            musicControlBtn.setAttribute('aria-label', `Volume da música em ${volumePercent}%`);
+        }
+
+        function setupBackgroundMusic() {
+            backgroundAudio.src = backgroundTracks[currentTrackIndex];
+            backgroundAudio.preload = "auto";
+            backgroundAudio.addEventListener('ended', () => {
+                currentTrackIndex = (currentTrackIndex + 1) % backgroundTracks.length;
+                backgroundAudio.src = backgroundTracks[currentTrackIndex];
+                backgroundAudio.play().catch(() => {});
+            });
+
+            musicControlBtn.onclick = () => {
+                currentVolumeLevelIndex = (currentVolumeLevelIndex + 1) % volumeLevels.length;
+                backgroundAudio.volume = volumeLevels[currentVolumeLevelIndex];
+                updateMusicButtonLabel();
+            };
+
+            updateMusicButtonLabel();
+            backgroundAudio.play().catch(() => {
+                document.body.addEventListener('click', () => {
+                    backgroundAudio.play().catch(() => {});
+                }, { once: true });
+            });
         }
 
         function renderKeyboard() {
