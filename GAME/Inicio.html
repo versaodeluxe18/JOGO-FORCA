@@ -314,7 +314,7 @@
 
     <script>
         // MANTENHA TODO O SEU SCRIPT ORIGINAL ABAIXO
-        const wordsDatabase = [
+        const fallbackWordsDatabase = [
             { word: "MINECRAFT", hint: "Blocos e sobrevivência" },
             { word: "KRATOS", hint: "Protagonista de God of War" },
             { word: "NINTENDO", hint: "Criadora do Mario" },
@@ -334,6 +334,7 @@
             { word: "PIKACHU", hint: "O Pokémon mais famoso" },
             { word: "GAMEBOY", hint: "Portátil clássico dos anos 90" }
         ];
+        let wordsDatabase = [...fallbackWordsDatabase];
 
         let currentWord = "";
         let currentHint = "";
@@ -392,12 +393,35 @@
             document.getElementById('leg-r')
         ];
 
-        function init() {
+        async function init() {
+            await loadQuestions();
             renderKeyboard();
             renderRank();
             startHallCountdown();
             setupBackgroundMusic();
             startNewGame();
+        }
+
+
+
+        async function loadQuestions() {
+            try {
+                const response = await fetch('./pergunta/perguntas.json');
+                if (!response.ok) throw new Error('Falha ao carregar perguntas');
+                const jsonData = await response.json();
+                const parsedData = jsonData
+                    .map(item => ({
+                        word: String(item.resposta || '').trim().toUpperCase(),
+                        hint: String(item.pergunta || '').trim()
+                    }))
+                    .filter(item => item.word && item.hint);
+
+                if (parsedData.length > 0) {
+                    wordsDatabase = parsedData;
+                }
+            } catch (error) {
+                console.warn('Usando perguntas locais (fallback).', error);
+            }
         }
 
         function updateMusicButtonLabel() {
