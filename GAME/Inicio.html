@@ -437,7 +437,15 @@
             backgroundAudio.src = backgroundTracks[currentTrackIndex];
             backgroundAudio.preload = "auto";
             backgroundAudio.addEventListener('ended', () => {
-                currentTrackIndex = (currentTrackIndex + 1) % backgroundTracks.length;
+                if (backgroundTracks.length > 1) {
+                    let nextTrackIndex = currentTrackIndex;
+                    while (nextTrackIndex === currentTrackIndex) {
+                        nextTrackIndex = Math.floor(Math.random() * backgroundTracks.length);
+                    }
+                    currentTrackIndex = nextTrackIndex;
+                } else {
+                    currentTrackIndex = 0;
+                }
                 backgroundAudio.src = backgroundTracks[currentTrackIndex];
                 backgroundAudio.play().catch(() => {});
             });
