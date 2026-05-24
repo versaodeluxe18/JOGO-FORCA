@@ -181,7 +181,8 @@
             transform: rotate(2deg) scale(1.06);
         }
 
-        #music-volume-panel.open {
+        #music-volume-panel.open,
+        #rank-actions-panel.open {
             opacity: 1;
             pointer-events: auto;
             transform: translateY(0) scale(1) rotate(-1deg);
@@ -229,6 +230,26 @@
     >
         🔊
     </button>
+
+    <button
+        id="rank-actions-btn"
+        type="button"
+        class="fixed top-3 right-16 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition rotate-2"
+        aria-label="Ações de ranking"
+        title="Importar ou salvar ranking"
+    >
+        🏆
+    </button>
+
+    <div id="rank-actions-panel" class="fixed top-16 right-16 z-50 paper-bg p-2 w-48 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+        <p class="text-[10px] font-bold uppercase mb-2">Ranking</p>
+        <div class="flex flex-col gap-1">
+            <button id="save-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Salvar rank atual</button>
+            <button id="import-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Importar rank</button>
+        </div>
+    </div>
+
+    <input id="rank-import-input" type="file" accept="application/json" class="hidden">
 
     <div id="music-volume-panel" class="fixed top-16 right-3 z-50 paper-bg p-2 w-40 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <label for="music-volume-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Volume</label>
@@ -384,6 +405,11 @@
         const musicVolumePanel = document.getElementById('music-volume-panel');
         const musicVolumeSlider = document.getElementById('music-volume-slider');
         const musicVolumeValue = document.getElementById('music-volume-value');
+        const rankActionsBtn = document.getElementById('rank-actions-btn');
+        const rankActionsPanel = document.getElementById('rank-actions-panel');
+        const saveRankBtn = document.getElementById('save-rank-btn');
+        const importRankBtn = document.getElementById('import-rank-btn');
+        const rankImportInput = document.getElementById('rank-import-input');
         const hangmanParts = [
             document.getElementById('head'),
             document.getElementById('body-line'),
@@ -399,6 +425,7 @@
             renderRank();
             startHallCountdown();
             setupBackgroundMusic();
+            setupRankActions();
             startNewGame();
         }
 
@@ -463,6 +490,9 @@
                 if (!musicVolumePanel.contains(event.target) && event.target !== musicControlBtn) {
                     musicVolumePanel.classList.remove('open');
                 }
+                if (!rankActionsPanel.contains(event.target) && event.target !== rankActionsBtn) {
+                    rankActionsPanel.classList.remove('open');
+                }
             });
 
             updateMusicButtonLabel();
@@ -470,6 +500,80 @@
                 document.body.addEventListener('click', () => {
                     backgroundAudio.play().catch(() => {});
                 }, { once: true });
+            });
+        }
+
+        function exportRankToJson() {
+            const rankPayload = {
+                exportedAt: new Date().toISOString(),
+                hallOfFameScores,
+                leaderboard
+            };
+            const blob = new Blob([JSON.stringify(rankPayload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            link.href = url;
+            link.download = `rank-forca-${timestamp}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function importRankFromObject(data) {
+            if (!data || typeof data !== 'object') throw new Error('JSON inválido.');
+            const importedHall = data.hallOfFameScores;
+            const importedLeaderboard = data.leaderboard;
+
+            if (!importedHall || typeof importedHall !== 'object' || Array.isArray(importedHall)) {
+                throw new Error('Campo hallOfFameScores ausente ou inválido.');
+            }
+
+            hallOfFameScores = Object.entries(importedHall).reduce((acc, [name, points]) => {
+                if (typeof name === 'string' && Number.isFinite(Number(points))) {
+                    acc[name] = Number(points);
+                }
+                return acc;
+            }, {});
+
+            if (Array.isArray(importedLeaderboard)) {
+                leaderboard = importedLeaderboard;
+                localStorage.setItem('hangman_gamer_rank', JSON.stringify(leaderboard));
+            }
+
+            localStorage.setItem('hangman_hall_of_fame_scores', JSON.stringify(hallOfFameScores));
+            renderRank();
+        }
+
+        function setupRankActions() {
+            rankActionsBtn.onclick = () => {
+                rankActionsPanel.classList.toggle('open');
+            };
+
+            saveRankBtn.onclick = () => {
+                exportRankToJson();
+                rankActionsPanel.classList.remove('open');
+            };
+
+            importRankBtn.onclick = () => {
+                rankImportInput.click();
+            };
+
+            rankImportInput.addEventListener('change', async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    importRankFromObject(data);
+                    alert('Ranking importado com sucesso!');
+                } catch (error) {
+                    alert(`Erro ao importar ranking: ${error.message || error}`);
+                } finally {
+                    rankImportInput.value = '';
+                    rankActionsPanel.classList.remove('open');
+                }
             });
         }
 
