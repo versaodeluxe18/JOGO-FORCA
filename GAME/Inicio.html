@@ -328,7 +328,7 @@
             <div class="panel-board paper-bg p-6 w-72 text-center pointer-events-auto">
                 <h2 id="modal-title" class="text-2xl font-bold mb-2">FIM DE JOGO</h2>
                 <p id="modal-message" class="mb-4 text-sm">A palavra era: <span id="correct-word" class="font-bold underline"></span></p>
-                <button onclick="startNewGame()" class="bg-black text-white px-6 py-2 uppercase font-bold hover:bg-zinc-800 w-full">Próxima</button>
+                <button onclick="handleNextRound()" class="bg-black text-white px-6 py-2 uppercase font-bold hover:bg-zinc-800 w-full">Próxima</button>
             </div>
         </div>
     </div>
@@ -439,23 +439,69 @@
         function playComfortStringPressSound() {
             ensureAudioContext();
             const now = audioContext.currentTime;
-            const osc = audioContext.createOscillator();
+            const oscA = audioContext.createOscillator();
+            const oscB = audioContext.createOscillator();
             const gain = audioContext.createGain();
             const filter = audioContext.createBiquadFilter();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(210, now);
-            osc.frequency.exponentialRampToValueAtTime(140, now + 0.22);
+            oscA.type = 'sine';
+            oscB.type = 'triangle';
+            oscA.frequency.setValueAtTime(246.94, now);
+            oscA.frequency.exponentialRampToValueAtTime(196, now + 0.28);
+            oscB.frequency.setValueAtTime(329.63, now);
+            oscB.frequency.exponentialRampToValueAtTime(261.63, now + 0.28);
             filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(900, now);
-            filter.Q.value = 5;
+            filter.frequency.setValueAtTime(1600, now);
+            filter.Q.value = 1.8;
             gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.1, now + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
-            osc.connect(filter);
+            gain.gain.exponentialRampToValueAtTime(0.075, now + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+            oscA.connect(filter);
+            oscB.connect(filter);
             filter.connect(gain);
             gain.connect(audioContext.destination);
-            osc.start(now);
-            osc.stop(now + 0.25);
+            oscA.start(now);
+            oscB.start(now);
+            oscA.stop(now + 0.34);
+            oscB.stop(now + 0.34);
+        }
+
+        function playComfortNextSound() {
+            ensureAudioContext();
+            const now = audioContext.currentTime;
+            const oscA = audioContext.createOscillator();
+            const oscB = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            oscA.type = 'sine';
+            oscB.type = 'triangle';
+            oscA.frequency.setValueAtTime(392, now);
+            oscA.frequency.exponentialRampToValueAtTime(523.25, now + 0.15);
+            oscB.frequency.setValueAtTime(587.33, now);
+            oscB.frequency.exponentialRampToValueAtTime(783.99, now + 0.15);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(2200, now);
+            filter.Q.value = 1.2;
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+
+            oscA.connect(filter);
+            oscB.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+
+            oscA.start(now);
+            oscB.start(now);
+            oscA.stop(now + 0.21);
+            oscB.stop(now + 0.21);
+        }
+
+        function handleNextRound() {
+            playComfortNextSound();
+            startNewGame();
         }
 
         function playComfortRankResetSound() {
@@ -943,6 +989,7 @@
         }
 
         window.startNewGame = startNewGame;
+        window.handleNextRound = handleNextRound;
 
         window.onkeydown = (e) => {
             if (!isGameOver) {
