@@ -217,10 +217,47 @@
         .bot-cursor.clicking {
             transform: translate(-50%, -50%) scale(0.8);
         }
+
+
+        .start-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            background: rgba(20, 20, 20, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+
+        .start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .countdown-pop {
+            animation: countdownPop 0.9s ease;
+        }
+
+        @keyframes countdownPop {
+            0% { transform: scale(0.6) rotate(-6deg); opacity: 0.2; }
+            45% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
     </style>
 </head>
 <body class="p-2 md:p-4">
     <div id="bot-cursor" class="bot-cursor"></div>
+    <div id="start-screen" class="start-screen">
+        <div class="paper-bg p-6 w-[90%] max-w-sm text-center transform -rotate-1">
+            <h2 class="text-2xl font-bold uppercase mb-2">Pronto para jogar?</h2>
+            <p class="text-xs mb-4">Toque em <strong>JOGAR</strong> para iniciar a contagem regressiva.</p>
+            <div id="start-countdown" class="text-5xl font-bold mb-4 hidden">30</div>
+            <button id="start-game-btn" class="bg-black text-white px-8 py-2 uppercase font-bold hover:bg-zinc-800">JOGAR</button>
+        </div>
+    </div>
+
     <button
         id="music-control-btn"
         type="button"
@@ -411,6 +448,9 @@
         const modal = document.getElementById('game-modal');
         const botCursor = document.getElementById('bot-cursor');
         const hallTimer = document.getElementById('hall-timer');
+        const startScreen = document.getElementById('start-screen');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const startCountdown = document.getElementById('start-countdown');
         const musicControlBtn = document.getElementById('music-control-btn');
         const musicVolumePanel = document.getElementById('music-volume-panel');
         const musicVolumeSlider = document.getElementById('music-volume-slider');
@@ -564,10 +604,43 @@
             renderRank();
             startHallCountdown();
             setupBackgroundMusic();
-            playRandomNarration(entryNarrations);
             setupRankActions();
+            setupStartScreen();
             document.querySelectorAll('button, .key').forEach(triggerComfortClick);
-            startNewGame();
+        }
+
+
+
+        function setupStartScreen() {
+            let countdownInterval = null;
+            startGameBtn.onclick = () => {
+                ensureAudioContext();
+                playComfortClickSound();
+                startGameBtn.disabled = true;
+                startGameBtn.classList.add('opacity-60', 'cursor-not-allowed');
+                startCountdown.classList.remove('hidden');
+
+                let remaining = 30;
+                startCountdown.textContent = String(remaining);
+                startCountdown.classList.remove('countdown-pop');
+                void startCountdown.offsetWidth;
+                startCountdown.classList.add('countdown-pop');
+
+                countdownInterval = setInterval(() => {
+                    remaining--;
+                    startCountdown.textContent = String(remaining);
+                    startCountdown.classList.remove('countdown-pop');
+                    void startCountdown.offsetWidth;
+                    startCountdown.classList.add('countdown-pop');
+
+                    if (remaining <= 0) {
+                        clearInterval(countdownInterval);
+                        startScreen.classList.add('hidden');
+                        setTimeout(() => startScreen.remove(), 450);
+                        startNewGame();
+                    }
+                }, 1000);
+            };
         }
 
 
@@ -747,6 +820,7 @@
             document.querySelectorAll('.key').forEach(k => k.classList.remove('used'));
             updateWordDisplay();
             scheduleAutoGuess();
+            playRandomNarration(entryNarrations);
         }
 
         function updateWordDisplay() {
