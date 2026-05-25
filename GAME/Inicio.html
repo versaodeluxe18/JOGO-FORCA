@@ -637,7 +637,7 @@
                         clearInterval(countdownInterval);
                         startScreen.classList.add('hidden');
                         setTimeout(() => startScreen.remove(), 450);
-                        startNewGame();
+                        startNewGame({ playEntryNarration: true });
                     }
                 }, 1000);
             };
@@ -804,7 +804,8 @@
             });
         }
 
-        function startNewGame() {
+        function startNewGame(options = {}) {
+            const { playEntryNarration = false } = options;
             const randomEntry = wordsDatabase[Math.floor(Math.random() * wordsDatabase.length)];
             currentWord = randomEntry.word.toUpperCase();
             currentHint = randomEntry.hint;
@@ -820,7 +821,9 @@
             document.querySelectorAll('.key').forEach(k => k.classList.remove('used'));
             updateWordDisplay();
             scheduleAutoGuess();
-            playRandomNarration(entryNarrations);
+            if (playEntryNarration) {
+                playRandomNarration(entryNarrations);
+            }
         }
 
         function updateWordDisplay() {
