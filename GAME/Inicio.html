@@ -392,6 +392,16 @@
         const backgroundAudio = new Audio();
         backgroundAudio.volume = 0.05;
         let currentTrackIndex = 0;
+        const entryNarrations = [
+            "narracao/entrada/Generated Audio May 24, 2026 - 5_28PM.wav",
+            "narracao/entrada/Generated Audio May 24, 2026 - 8_27PM.wav",
+            "narracao/entrada/Generated Audio May 24, 2026 - 5_10PM.wav"
+        ];
+        const closingNarrations = [
+            "narracao/fechamento/Generated Audio May 25, 2026 - 12_05AM.wav",
+            "narracao/fechamento/Generated Audio May 24, 2026 - 11_19PM.wav",
+            "narracao/fechamento/Generated Audio May 24, 2026 - 11_14PM.wav"
+        ];
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -536,12 +546,25 @@
             document.getElementById('leg-r')
         ];
 
+        function getRandomAudioPath(audioPaths) {
+            if (!Array.isArray(audioPaths) || audioPaths.length === 0) return null;
+            return audioPaths[Math.floor(Math.random() * audioPaths.length)];
+        }
+
+        function playRandomNarration(audioPaths) {
+            const randomPath = getRandomAudioPath(audioPaths);
+            if (!randomPath) return;
+            const narrationAudio = new Audio(randomPath);
+            narrationAudio.play().catch(() => {});
+        }
+
         async function init() {
             await loadQuestions();
             renderKeyboard();
             renderRank();
             startHallCountdown();
             setupBackgroundMusic();
+            playRandomNarration(entryNarrations);
             setupRankActions();
             document.querySelectorAll('button, .key').forEach(triggerComfortClick);
             startNewGame();
@@ -784,6 +807,7 @@
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
+                playRandomNarration(closingNarrations);
             }
         }
 
