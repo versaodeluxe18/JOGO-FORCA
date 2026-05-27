@@ -277,6 +277,15 @@
     >
         🏆
     </button>
+    <button
+        id="settings-btn"
+        type="button"
+        class="fixed top-3 right-28 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition -rotate-2"
+        aria-label="Configurações"
+        title="Configurações da jogada automática"
+    >
+        ⚙️
+    </button>
 
     <div id="rank-actions-panel" class="fixed top-16 right-16 z-50 paper-bg p-2 w-48 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <p class="text-[10px] font-bold uppercase mb-2">Ranking</p>
@@ -284,6 +293,12 @@
             <button id="save-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Salvar rank atual</button>
             <button id="import-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Importar rank</button>
         </div>
+    </div>
+    <div id="settings-panel" class="fixed top-16 right-28 z-50 paper-bg p-2 w-56 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+        <p class="text-[10px] font-bold uppercase mb-2">Configurações</p>
+        <label for="initial-chance-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Chance inicial de acerto</label>
+        <input id="initial-chance-slider" type="range" min="0" max="100" step="1" value="5" class="w-full">
+        <p id="initial-chance-value" class="text-[10px] mt-1 text-right font-bold">5%</p>
     </div>
 
     <input id="rank-import-input" type="file" accept="application/json" class="hidden">
@@ -401,8 +416,11 @@
         const maxMistakes = 6;
         let score = 0;
         let leaderboard = JSON.parse(localStorage.getItem('hangman_gamer_rank')) || [];
-        let correctPickChance = 0.05;
-        const initialCorrectPickChance = 0.05;
+        const storedInitialChance = Number(localStorage.getItem('hangman_initial_correct_pick_chance'));
+        let initialCorrectPickChance = Number.isFinite(storedInitialChance)
+            ? Math.min(1, Math.max(0, storedInitialChance))
+            : 0.05;
+        let correctPickChance = initialCorrectPickChance;
         const chanceIncrementOnError = 0.10;
         let autoPlayTimeout = null;
         let autoContinueModalTimeout = null;
@@ -469,6 +487,10 @@
         const musicVolumeValue = document.getElementById('music-volume-value');
         const rankActionsBtn = document.getElementById('rank-actions-btn');
         const rankActionsPanel = document.getElementById('rank-actions-panel');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const initialChanceSlider = document.getElementById('initial-chance-slider');
+        const initialChanceValue = document.getElementById('initial-chance-value');
         const saveRankBtn = document.getElementById('save-rank-btn');
         const importRankBtn = document.getElementById('import-rank-btn');
         const rankImportInput = document.getElementById('rank-import-input');
@@ -669,6 +691,7 @@
             startHallCountdown();
             setupBackgroundMusic();
             setupRankActions();
+            setupSettingsPanel();
             setupStartScreen();
             document.querySelectorAll('button, .key').forEach(triggerComfortClick);
         }
@@ -772,6 +795,9 @@
                 if (!rankActionsPanel.contains(event.target) && event.target !== rankActionsBtn) {
                     rankActionsPanel.classList.remove('open');
                 }
+                if (!settingsPanel.contains(event.target) && event.target !== settingsBtn) {
+                    settingsPanel.classList.remove('open');
+                }
             });
 
             updateMusicButtonLabel();
@@ -827,6 +853,8 @@
 
         function setupRankActions() {
             rankActionsBtn.onclick = () => {
+                settingsPanel.classList.remove('open');
+                musicVolumePanel.classList.remove('open');
                 rankActionsPanel.classList.toggle('open');
             };
 
@@ -853,6 +881,36 @@
                     rankImportInput.value = '';
                     rankActionsPanel.classList.remove('open');
                 }
+            });
+        }
+
+        function syncInitialChanceUI() {
+            const chancePercent = Math.round(initialCorrectPickChance * 100);
+            initialChanceSlider.value = String(chancePercent);
+            initialChanceValue.textContent = `${chancePercent}%`;
+            settingsBtn.title = `Chance inicial: ${chancePercent}%`;
+        }
+
+        function setupSettingsPanel() {
+            syncInitialChanceUI();
+
+            settingsBtn.onclick = () => {
+                rankActionsPanel.classList.remove('open');
+                musicVolumePanel.classList.remove('open');
+                settingsPanel.classList.toggle('open');
+            };
+
+            initialChanceSlider.addEventListener('input', (event) => {
+                const value = Number(event.target.value);
+                if (!Number.isFinite(value)) return;
+                initialCorrectPickChance = Math.min(1, Math.max(0, value / 100));
+                initialChanceValue.textContent = `${Math.round(value)}%`;
+            });
+
+            initialChanceSlider.addEventListener('change', () => {
+                localStorage.setItem('hangman_initial_correct_pick_chance', String(initialCorrectPickChance));
+                correctPickChance = initialCorrectPickChance;
+                syncInitialChanceUI();
             });
         }
 
