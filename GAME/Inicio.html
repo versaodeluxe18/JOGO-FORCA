@@ -445,6 +445,7 @@
             "narracao/enchendo/Generated Audio 3.wav"
         ];
         let activeNarrationAudio = null;
+        const narrationQueue = [];
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -597,24 +598,39 @@
             return audioPaths[Math.floor(Math.random() * audioPaths.length)];
         }
 
-        function stopActiveNarration() {
-            if (!activeNarrationAudio) return;
-            activeNarrationAudio.pause();
-            activeNarrationAudio.currentTime = 0;
-            activeNarrationAudio = null;
-        }
+        function playNextNarrationFromQueue() {
+            if (activeNarrationAudio || narrationQueue.length === 0) return;
 
-        function playNarration(audioPath) {
-            if (!audioPath) return;
-            stopActiveNarration();
-            const narrationAudio = new Audio(audioPath);
+            const nextAudioPath = narrationQueue.shift();
+            const narrationAudio = new Audio(nextAudioPath);
             activeNarrationAudio = narrationAudio;
+
             narrationAudio.addEventListener('ended', () => {
                 if (activeNarrationAudio === narrationAudio) {
                     activeNarrationAudio = null;
                 }
+                playNextNarrationFromQueue();
             });
-            narrationAudio.play().catch(() => {});
+
+            narrationAudio.addEventListener('error', () => {
+                if (activeNarrationAudio === narrationAudio) {
+                    activeNarrationAudio = null;
+                }
+                playNextNarrationFromQueue();
+            });
+
+            narrationAudio.play().catch(() => {
+                if (activeNarrationAudio === narrationAudio) {
+                    activeNarrationAudio = null;
+                }
+                playNextNarrationFromQueue();
+            });
+        }
+
+        function playNarration(audioPath) {
+            if (!audioPath) return;
+            narrationQueue.push(audioPath);
+            playNextNarrationFromQueue();
         }
 
         function playRandomNarration(audioPaths) {
