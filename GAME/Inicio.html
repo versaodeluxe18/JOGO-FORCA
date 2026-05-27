@@ -444,6 +444,11 @@
             "narracao/enchendo/Generated Audio 2.wav",
             "narracao/enchendo/Generated Audio 3.wav"
         ];
+        const victoryNarrations = [
+            "narracao/vitoria/Generated Audio 1.wav",
+            "narracao/vitoria/Generated Audio 2.wav",
+            "narracao/vitoria/Generated Audio 3.wav"
+        ];
         let activeNarrationAudio = null;
         const narrationQueue = [];
 
@@ -943,6 +948,7 @@
                 title.className = "text-2xl font-bold mb-2 text-green-800";
                 score += 100 + (maxMistakes - mistakes) * 10;
                 scoreDisplay.textContent = score;
+                playRandomNarration(victoryNarrations);
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
