@@ -439,6 +439,12 @@
             "narracao/fechamento/Generated Audio May 24, 2026 - 11_19PM.wav",
             "narracao/fechamento/Generated Audio May 24, 2026 - 11_14PM.wav"
         ];
+        const fillNarrations = [
+            "narracao/enchendo/Generated Audio 1.wav",
+            "narracao/enchendo/Generated Audio 2.wav",
+            "narracao/enchendo/Generated Audio 3.wav"
+        ];
+        let activeNarrationAudio = null;
 
         const wordDisplay = document.getElementById('word-display');
         const hintText = document.getElementById('hint-text');
@@ -591,11 +597,48 @@
             return audioPaths[Math.floor(Math.random() * audioPaths.length)];
         }
 
+        function stopActiveNarration() {
+            if (!activeNarrationAudio) return;
+            activeNarrationAudio.pause();
+            activeNarrationAudio.currentTime = 0;
+            activeNarrationAudio = null;
+        }
+
+        function playNarration(audioPath) {
+            if (!audioPath) return;
+            stopActiveNarration();
+            const narrationAudio = new Audio(audioPath);
+            activeNarrationAudio = narrationAudio;
+            narrationAudio.addEventListener('ended', () => {
+                if (activeNarrationAudio === narrationAudio) {
+                    activeNarrationAudio = null;
+                }
+            });
+            narrationAudio.play().catch(() => {});
+        }
+
         function playRandomNarration(audioPaths) {
             const randomPath = getRandomAudioPath(audioPaths);
-            if (!randomPath) return;
-            const narrationAudio = new Audio(randomPath);
-            narrationAudio.play().catch(() => {});
+            playNarration(randomPath);
+        }
+
+        async function resolveQuestionNarrationPath(questionItem, questionIndex) {
+            const explicitAudio = String(questionItem.audio || '').trim();
+            if (explicitAudio) return explicitAudio;
+
+            const possiblePaths = [
+                `narracao/pergunta/${questionIndex + 1}.wav`,
+                `narracao/pergunta/${questionIndex + 1}.mp3`
+            ];
+
+            for (const path of possiblePaths) {
+                try {
+                    const response = await fetch(path, { method: 'HEAD' });
+                    if (response.ok) return path;
+                } catch (_) {}
+            }
+
+            return null;
         }
 
         async function init() {
@@ -650,15 +693,16 @@
                 const response = await fetch('./pergunta/perguntas.json');
                 if (!response.ok) throw new Error('Falha ao carregar perguntas');
                 const jsonData = await response.json();
-                const parsedData = jsonData
-                    .map(item => ({
+                const parsedData = await Promise.all(jsonData.map(async (item, index) => ({
                         word: String(item.resposta || '').trim().toUpperCase(),
-                        hint: String(item.pergunta || '').trim()
-                    }))
+                        hint: String(item.pergunta || '').trim(),
+                        narration: await resolveQuestionNarrationPath(item, index)
+                    })));
+                const filteredData = parsedData
                     .filter(item => item.word && item.hint);
 
-                if (parsedData.length > 0) {
-                    wordsDatabase = parsedData;
+                if (filteredData.length > 0) {
+                    wordsDatabase = filteredData;
                 }
             } catch (error) {
                 console.warn('Usando perguntas locais (fallback).', error);
@@ -823,6 +867,8 @@
             scheduleAutoGuess();
             if (playEntryNarration) {
                 playRandomNarration(entryNarrations);
+            } else {
+                playNarration(randomEntry.narration || getRandomAudioPath(fillNarrations));
             }
         }
 
