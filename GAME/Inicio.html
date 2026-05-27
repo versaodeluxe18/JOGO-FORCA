@@ -172,7 +172,7 @@
 
         #music-control-btn {
             background: linear-gradient(145deg, #f8f8f8, #d7d7d7);
-            border: 2px solid var(--ink-black);
+            border: 1px solid #ccc;
             box-shadow: 4px 4px 0 rgba(0,0,0,0.2), inset 1px 1px 4px rgba(255,255,255,0.6);
             transform: rotate(-2deg);
         }
@@ -789,13 +789,13 @@
             });
 
             document.addEventListener('click', (event) => {
-                if (!musicVolumePanel.contains(event.target) && event.target !== musicControlBtn) {
+                if (!musicVolumePanel.contains(event.target) && !musicControlBtn.contains(event.target)) {
                     musicVolumePanel.classList.remove('open');
                 }
-                if (!rankActionsPanel.contains(event.target) && event.target !== rankActionsBtn) {
+                if (!rankActionsPanel.contains(event.target) && !rankActionsBtn.contains(event.target)) {
                     rankActionsPanel.classList.remove('open');
                 }
-                if (!settingsPanel.contains(event.target) && event.target !== settingsBtn) {
+                if (!settingsPanel.contains(event.target) && !settingsBtn.contains(event.target)) {
                     settingsPanel.classList.remove('open');
                 }
             });
