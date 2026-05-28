@@ -250,6 +250,16 @@
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
 
+        body.tab-fast-forward *,
+        body.tab-fast-forward *::before,
+        body.tab-fast-forward *::after {
+            animation-duration: 1ms !important;
+            animation-delay: 0ms !important;
+            transition-duration: 1ms !important;
+            transition-delay: 0ms !important;
+            scroll-behavior: auto !important;
+        }
+
     </style>
 </head>
 <body class="p-2 md:p-4">
@@ -658,6 +668,101 @@
             element.addEventListener('click', playComfortClickSound);
         }
 
+        let backgroundTimerWorker = null;
+
+        function getBackgroundTimerWorker() {
+            if (!window.Worker || !window.Blob || !window.URL) return null;
+            if (backgroundTimerWorker) return backgroundTimerWorker;
+
+            const workerScript = `
+                const timers = new Map();
+                self.onmessage = ({ data }) => {
+                    if (!data || !data.id) return;
+                    if (data.type === 'clear') {
+                        clearTimeout(timers.get(data.id));
+                        timers.delete(data.id);
+                        return;
+                    }
+                    if (data.type === 'set') {
+                        clearTimeout(timers.get(data.id));
+                        const wait = Math.max(0, data.dueAt - Date.now());
+                        const timeoutId = setTimeout(() => {
+                            timers.delete(data.id);
+                            self.postMessage({ id: data.id });
+                        }, wait);
+                        timers.set(data.id, timeoutId);
+                    }
+                };
+            `;
+
+            const workerUrl = URL.createObjectURL(new Blob([workerScript], { type: 'text/javascript' }));
+            backgroundTimerWorker = new Worker(workerUrl);
+            URL.revokeObjectURL(workerUrl);
+            return backgroundTimerWorker;
+        }
+
+        function createDeadlineTimeout(callback, delayMs) {
+            const dueAt = Date.now() + Math.max(0, delayMs);
+            let cleared = false;
+            let timeoutId = null;
+            let clearWorkerTimer = () => {};
+            const worker = getBackgroundTimerWorker();
+            const workerTimerId = `timer-${Date.now()}-${Math.random()}`;
+
+            const runIfDue = () => {
+                if (cleared) return;
+                const remaining = dueAt - Date.now();
+                if (remaining > 25) {
+                    timeoutId = setTimeout(runIfDue, Math.min(remaining, 1000));
+                    return;
+                }
+                cleared = true;
+                clearWorkerTimer();
+                callback();
+            };
+
+            timeoutId = setTimeout(runIfDue, Math.min(Math.max(0, delayMs), 1000));
+            if (worker) {
+                const handleWorkerMessage = ({ data }) => {
+                    if (!data || data.id !== workerTimerId) return;
+                    runIfDue();
+                };
+                clearWorkerTimer = () => {
+                    worker.removeEventListener('message', handleWorkerMessage);
+                    worker.postMessage({ type: 'clear', id: workerTimerId });
+                };
+                worker.addEventListener('message', handleWorkerMessage);
+                worker.postMessage({ type: 'set', id: workerTimerId, dueAt });
+            }
+
+            return {
+                clear() {
+                    cleared = true;
+                    clearTimeout(timeoutId);
+                    clearWorkerTimer();
+                }
+            };
+        }
+
+        function clearDeadlineTimeout(timerRef) {
+            if (timerRef && typeof timerRef.clear === 'function') timerRef.clear();
+        }
+        function syncBackgroundPlaybackMode() {
+            if (document.hidden) {
+                document.body.classList.add('tab-fast-forward');
+                return;
+            }
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    document.body.classList.remove('tab-fast-forward');
+                });
+            });
+        }
+
+        document.addEventListener('visibilitychange', syncBackgroundPlaybackMode);
+        syncBackgroundPlaybackMode();
+
         const hangmanParts = [
             document.getElementById('head'),
             document.getElementById('body-line'),
@@ -746,7 +851,7 @@
 
 
         function setupStartScreen() {
-            let countdownInterval = null;
+            let countdownTimer = null;
             startGameBtn.onclick = () => {
                 ensureAudioContext();
                 playComfortClickSound();
@@ -754,26 +859,33 @@
                 startGameBtn.classList.add('opacity-60', 'cursor-not-allowed');
                 startCountdown.classList.remove('hidden');
 
-                let remaining = 30;
-                startCountdown.textContent = String(remaining);
-                startCountdown.classList.remove('countdown-pop');
-                void startCountdown.offsetWidth;
-                startCountdown.classList.add('countdown-pop');
+                const countdownEndsAt = Date.now() + 30000;
+                let lastRenderedRemaining = null;
 
-                countdownInterval = setInterval(() => {
-                    remaining--;
-                    startCountdown.textContent = String(remaining);
-                    startCountdown.classList.remove('countdown-pop');
-                    void startCountdown.offsetWidth;
-                    startCountdown.classList.add('countdown-pop');
+                const finishCountdown = () => {
+                    clearDeadlineTimeout(countdownTimer);
+                    startScreen.classList.add('hidden');
+                    createDeadlineTimeout(() => startScreen.remove(), 450);
+                    startNewGame({ playEntryNarration: true });
+                };
 
-                    if (remaining <= 0) {
-                        clearInterval(countdownInterval);
-                        startScreen.classList.add('hidden');
-                        setTimeout(() => startScreen.remove(), 450);
-                        startNewGame({ playEntryNarration: true });
+                const renderCountdown = () => {
+                    const remaining = Math.max(0, Math.ceil((countdownEndsAt - Date.now()) / 1000));
+                    if (remaining !== lastRenderedRemaining) {
+                        lastRenderedRemaining = remaining;
+                        startCountdown.textContent = String(remaining);
+                        startCountdown.classList.remove('countdown-pop');
+                        void startCountdown.offsetWidth;
+                        startCountdown.classList.add('countdown-pop');
                     }
-                }, 1000);
+                    if (remaining <= 0) {
+                        finishCountdown();
+                        return;
+                    }
+                    countdownTimer = createDeadlineTimeout(renderCountdown, 250);
+                };
+
+                renderCountdown();
             };
         }
 
@@ -1060,7 +1172,7 @@
             isGameOver = false;
             correctPickChance = initialCorrectPickChance;
             syncChanceSettingsUI();
-            clearTimeout(autoContinueModalTimeout);
+            clearDeadlineTimeout(autoContinueModalTimeout);
             modal.classList.remove('open');
             modal.classList.add('closing');
             hintText.textContent = currentHint;
@@ -1123,7 +1235,7 @@
             const msg = document.getElementById('modal-message');
             const correctWordDisplay = document.getElementById('correct-word');
             isGameOver = true;
-            clearTimeout(autoPlayTimeout);
+            clearDeadlineTimeout(autoPlayTimeout);
             modal.classList.remove('closing');
             modal.classList.add('open');
             correctWordDisplay.textContent = currentWord;
@@ -1173,19 +1285,21 @@
             botCursor.style.left = `${x}px`;
             botCursor.style.top = `${y}px`;
 
-            setTimeout(() => {
+            const movementDelay = document.hidden ? 0 : 1200;
+            createDeadlineTimeout(() => {
                 botCursor.classList.add('clicking');
-                setTimeout(() => {
+                const clickDelay = document.hidden ? 0 : 140;
+                createDeadlineTimeout(() => {
                     botCursor.classList.remove('clicking');
                     onArrive();
-                }, 140);
-            }, 1200);
+                }, clickDelay);
+            }, movementDelay);
         }
 
 
         function scheduleAutoContinueModal() {
-            clearTimeout(autoContinueModalTimeout);
-            autoContinueModalTimeout = setTimeout(() => {
+            clearDeadlineTimeout(autoContinueModalTimeout);
+            autoContinueModalTimeout = createDeadlineTimeout(() => {
                 if (!isGameOver || !modal.classList.contains('open')) return;
                 const nextButton = modal.querySelector('button');
                 if (!nextButton) return;
@@ -1197,9 +1311,9 @@
         }
 
         function scheduleAutoGuess() {
-            clearTimeout(autoPlayTimeout);
+            clearDeadlineTimeout(autoPlayTimeout);
             if (isGameOver) return;
-            autoPlayTimeout = setTimeout(() => {
+            autoPlayTimeout = createDeadlineTimeout(() => {
                 if (isGameOver) return;
                 const targetButton = pickNextLetter();
                 if (!targetButton) return;
@@ -1330,17 +1444,21 @@
             pendingHallRound.startedAt = Date.now();
             pendingHallRound.closesAt = Date.now() + HALL_COUNTDOWN_SECONDS * 1000;
             hallTimer.textContent = formatRemainingTime(hallRemainingSeconds);
-            if (hallTimerInterval) clearInterval(hallTimerInterval);
-            hallTimerInterval = setInterval(async () => {
-                hallRemainingSeconds--;
-                hallTimer.textContent = formatRemainingTime(Math.max(hallRemainingSeconds, 0));
+            clearDeadlineTimeout(hallTimerInterval);
+
+            const updateHallCountdown = async () => {
+                hallRemainingSeconds = Math.max(0, Math.ceil((pendingHallRound.closesAt - Date.now()) / 1000));
+                hallTimer.textContent = formatRemainingTime(hallRemainingSeconds);
                 if (hallRemainingSeconds <= 0) {
-                    clearInterval(hallTimerInterval);
                     await processHallOfFameCycle();
                     playComfortRankResetSound();
                     startHallCountdown();
+                    return;
                 }
-            }, 1000);
+                hallTimerInterval = createDeadlineTimeout(updateHallCountdown, 250);
+            };
+
+            hallTimerInterval = createDeadlineTimeout(updateHallCountdown, 250);
         }
 
         window.startNewGame = startNewGame;
