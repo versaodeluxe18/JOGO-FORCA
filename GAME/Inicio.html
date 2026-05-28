@@ -192,7 +192,9 @@
 
         #music-volume-slider,
         #initial-chance-slider,
-        #error-scaling-slider {
+        #error-scaling-slider,
+        #auto-delay-min-slider,
+        #auto-delay-max-slider {
             accent-color: #1a1a1a;
             cursor: pointer;
         }
@@ -307,6 +309,18 @@
         <input id="error-scaling-slider" type="range" min="0" max="100" step="1" value="10" class="w-full">
         <p id="error-scaling-value" class="text-[10px] mt-1 text-right font-bold">+10%</p>
         <p id="current-chance-value" class="text-[10px] mt-3 pt-2 border-t border-dashed border-black font-bold text-center">Chance atual: 5%</p>
+
+        <div class="mt-3 pt-2 border-t border-dashed border-black">
+            <p class="text-[10px] font-bold uppercase mb-2">Tempo entre tentativas</p>
+            <label for="auto-delay-min-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Mínimo</label>
+            <input id="auto-delay-min-slider" type="range" min="1" max="60" step="1" value="5" class="w-full">
+            <p id="auto-delay-min-value" class="text-[10px] mt-1 mb-2 text-right font-bold">5s</p>
+
+            <label for="auto-delay-max-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Máximo</label>
+            <input id="auto-delay-max-slider" type="range" min="1" max="60" step="1" value="10" class="w-full">
+            <p id="auto-delay-max-value" class="text-[10px] mt-1 text-right font-bold">10s</p>
+            <p id="auto-delay-range-value" class="text-[10px] mt-2 font-bold text-center">Aleatório: 5s a 10s</p>
+        </div>
     </div>
 
     <input id="rank-import-input" type="file" accept="application/json" class="hidden">
@@ -426,6 +440,12 @@
         let leaderboard = JSON.parse(localStorage.getItem('hangman_gamer_rank')) || [];
         const storedInitialChance = Number(localStorage.getItem('hangman_initial_correct_pick_chance'));
         const storedErrorScalingChance = Number(localStorage.getItem('hangman_error_scaling_correct_pick_chance'));
+        const storedAutoDelayMinSecondsValue = localStorage.getItem('hangman_auto_delay_min_seconds');
+        const storedAutoDelayMaxSecondsValue = localStorage.getItem('hangman_auto_delay_max_seconds');
+        const storedAutoDelayMinSeconds = Number(storedAutoDelayMinSecondsValue);
+        const storedAutoDelayMaxSeconds = Number(storedAutoDelayMaxSecondsValue);
+        const AUTO_DELAY_MIN_SECONDS = 1;
+        const AUTO_DELAY_MAX_SECONDS = 60;
         let initialCorrectPickChance = Number.isFinite(storedInitialChance)
             ? Math.min(1, Math.max(0, storedInitialChance))
             : 0.05;
@@ -433,6 +453,13 @@
             ? Math.min(1, Math.max(0, storedErrorScalingChance))
             : 0.10;
         let correctPickChance = initialCorrectPickChance;
+        let autoDelayMinSeconds = clampAutoDelaySeconds(
+            storedAutoDelayMinSecondsValue !== null && Number.isFinite(storedAutoDelayMinSeconds) ? storedAutoDelayMinSeconds : 5
+        );
+        let autoDelayMaxSeconds = clampAutoDelaySeconds(
+            storedAutoDelayMaxSecondsValue !== null && Number.isFinite(storedAutoDelayMaxSeconds) ? storedAutoDelayMaxSeconds : 10
+        );
+        if (autoDelayMaxSeconds < autoDelayMinSeconds) autoDelayMaxSeconds = autoDelayMinSeconds;
         let missedGuessStreak = 0;
         let autoPlayTimeout = null;
         let autoContinueModalTimeout = null;
@@ -506,6 +533,11 @@
         const errorScalingSlider = document.getElementById('error-scaling-slider');
         const errorScalingValue = document.getElementById('error-scaling-value');
         const currentChanceValue = document.getElementById('current-chance-value');
+        const autoDelayMinSlider = document.getElementById('auto-delay-min-slider');
+        const autoDelayMinValue = document.getElementById('auto-delay-min-value');
+        const autoDelayMaxSlider = document.getElementById('auto-delay-max-slider');
+        const autoDelayMaxValue = document.getElementById('auto-delay-max-value');
+        const autoDelayRangeValue = document.getElementById('auto-delay-range-value');
         const saveRankBtn = document.getElementById('save-rank-btn');
         const importRankBtn = document.getElementById('import-rank-btn');
         const rankImportInput = document.getElementById('rank-import-input');
@@ -903,8 +935,17 @@
             return `${Math.round(value * 100)}%`;
         }
 
+        function formatSeconds(value) {
+            const seconds = Math.round(value);
+            return `${seconds}s`;
+        }
+
         function clampChance(value) {
             return Math.min(1, Math.max(0, value));
+        }
+
+        function clampAutoDelaySeconds(value) {
+            return Math.min(AUTO_DELAY_MAX_SECONDS, Math.max(AUTO_DELAY_MIN_SECONDS, Math.round(value)));
         }
 
         function recalculateCurrentPickChance() {
@@ -916,6 +957,19 @@
             localStorage.setItem('hangman_error_scaling_correct_pick_chance', String(chanceIncrementOnError));
         }
 
+        function persistAutoDelaySettings() {
+            localStorage.setItem('hangman_auto_delay_min_seconds', String(autoDelayMinSeconds));
+            localStorage.setItem('hangman_auto_delay_max_seconds', String(autoDelayMaxSeconds));
+        }
+
+        function syncAutoDelaySettingsUI() {
+            autoDelayMinSlider.value = String(autoDelayMinSeconds);
+            autoDelayMaxSlider.value = String(autoDelayMaxSeconds);
+            autoDelayMinValue.textContent = formatSeconds(autoDelayMinSeconds);
+            autoDelayMaxValue.textContent = formatSeconds(autoDelayMaxSeconds);
+            autoDelayRangeValue.textContent = `Aleatório: ${formatSeconds(autoDelayMinSeconds)} a ${formatSeconds(autoDelayMaxSeconds)}`;
+        }
+
         function syncChanceSettingsUI() {
             const initialChancePercent = Math.round(initialCorrectPickChance * 100);
             const errorScalingPercent = Math.round(chanceIncrementOnError * 100);
@@ -924,7 +978,23 @@
             errorScalingSlider.value = String(errorScalingPercent);
             errorScalingValue.textContent = `+${formatChancePercent(chanceIncrementOnError)}`;
             currentChanceValue.textContent = `Chance atual: ${formatChancePercent(correctPickChance)}`;
-            settingsBtn.title = `Chance inicial: ${initialChancePercent}% | Escalamento por erro: +${errorScalingPercent}%`;
+            settingsBtn.title = `Chance inicial: ${initialChancePercent}% | Escalamento por erro: +${errorScalingPercent}% | Tempo: ${formatSeconds(autoDelayMinSeconds)} a ${formatSeconds(autoDelayMaxSeconds)}`;
+        }
+
+        function updateAutoDelaySettingFromSlider(slider) {
+            const value = Number(slider.value);
+            if (!Number.isFinite(value)) return;
+
+            if (slider === autoDelayMinSlider) {
+                autoDelayMinSeconds = clampAutoDelaySeconds(value);
+                if (autoDelayMinSeconds > autoDelayMaxSeconds) autoDelayMaxSeconds = autoDelayMinSeconds;
+            } else {
+                autoDelayMaxSeconds = clampAutoDelaySeconds(value);
+                if (autoDelayMaxSeconds < autoDelayMinSeconds) autoDelayMinSeconds = autoDelayMaxSeconds;
+            }
+
+            syncAutoDelaySettingsUI();
+            syncChanceSettingsUI();
         }
 
         function updateChanceSettingFromSlider(slider) {
@@ -940,6 +1010,7 @@
         }
 
         function setupSettingsPanel() {
+            syncAutoDelaySettingsUI();
             syncChanceSettingsUI();
 
             settingsBtn.onclick = () => {
@@ -953,6 +1024,14 @@
                 slider.addEventListener('change', () => {
                     updateChanceSettingFromSlider(slider);
                     persistChanceSettings();
+                });
+            });
+
+            [autoDelayMinSlider, autoDelayMaxSlider].forEach((slider) => {
+                slider.addEventListener('input', () => updateAutoDelaySettingFromSlider(slider));
+                slider.addEventListener('change', () => {
+                    updateAutoDelaySettingFromSlider(slider);
+                    persistAutoDelaySettings();
                 });
             });
         }
@@ -1064,7 +1143,7 @@
         }
 
         function getRandomDelayMs() {
-            const seconds = 5 + Math.random() * 15;
+            const seconds = autoDelayMinSeconds + Math.random() * (autoDelayMaxSeconds - autoDelayMinSeconds);
             return Math.floor(seconds * 1000);
         }
 
