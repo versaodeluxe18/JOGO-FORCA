@@ -182,14 +182,17 @@
         }
 
         #music-volume-panel.open,
-        #rank-actions-panel.open {
+        #rank-actions-panel.open,
+        #settings-panel.open {
             opacity: 1;
             pointer-events: auto;
             transform: translateY(0) scale(1) rotate(-1deg);
             animation: panelPulse 0.35s ease;
         }
 
-        #music-volume-slider {
+        #music-volume-slider,
+        #initial-chance-slider,
+        #error-scaling-slider {
             accent-color: #1a1a1a;
             cursor: pointer;
         }
@@ -294,11 +297,16 @@
             <button id="import-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Importar rank</button>
         </div>
     </div>
-    <div id="settings-panel" class="fixed top-16 right-28 z-[120] paper-bg p-2 w-56 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
-        <p class="text-[10px] font-bold uppercase mb-2">Configurações</p>
+    <div id="settings-panel" class="fixed top-16 right-28 z-[120] paper-bg p-3 w-64 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+        <p class="text-[10px] font-bold uppercase mb-2">Configurações da jogada automática</p>
         <label for="initial-chance-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Chance inicial de acerto</label>
         <input id="initial-chance-slider" type="range" min="0" max="100" step="1" value="5" class="w-full">
-        <p id="initial-chance-value" class="text-[10px] mt-1 text-right font-bold">5%</p>
+        <p id="initial-chance-value" class="text-[10px] mt-1 mb-3 text-right font-bold">5%</p>
+
+        <label for="error-scaling-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Escalamento após errar</label>
+        <input id="error-scaling-slider" type="range" min="0" max="100" step="1" value="10" class="w-full">
+        <p id="error-scaling-value" class="text-[10px] mt-1 text-right font-bold">+10%</p>
+        <p id="current-chance-value" class="text-[10px] mt-3 pt-2 border-t border-dashed border-black font-bold text-center">Chance atual: 5%</p>
     </div>
 
     <input id="rank-import-input" type="file" accept="application/json" class="hidden">
@@ -417,11 +425,15 @@
         let score = 0;
         let leaderboard = JSON.parse(localStorage.getItem('hangman_gamer_rank')) || [];
         const storedInitialChance = Number(localStorage.getItem('hangman_initial_correct_pick_chance'));
+        const storedErrorScalingChance = Number(localStorage.getItem('hangman_error_scaling_correct_pick_chance'));
         let initialCorrectPickChance = Number.isFinite(storedInitialChance)
             ? Math.min(1, Math.max(0, storedInitialChance))
             : 0.05;
+        let chanceIncrementOnError = Number.isFinite(storedErrorScalingChance)
+            ? Math.min(1, Math.max(0, storedErrorScalingChance))
+            : 0.10;
         let correctPickChance = initialCorrectPickChance;
-        const chanceIncrementOnError = 0.10;
+        let missedGuessStreak = 0;
         let autoPlayTimeout = null;
         let autoContinueModalTimeout = null;
         let isGameOver = false;
@@ -491,6 +503,9 @@
         const settingsPanel = document.getElementById('settings-panel');
         const initialChanceSlider = document.getElementById('initial-chance-slider');
         const initialChanceValue = document.getElementById('initial-chance-value');
+        const errorScalingSlider = document.getElementById('error-scaling-slider');
+        const errorScalingValue = document.getElementById('error-scaling-value');
+        const currentChanceValue = document.getElementById('current-chance-value');
         const saveRankBtn = document.getElementById('save-rank-btn');
         const importRankBtn = document.getElementById('import-rank-btn');
         const rankImportInput = document.getElementById('rank-import-input');
@@ -884,15 +899,48 @@
             });
         }
 
-        function syncInitialChanceUI() {
-            const chancePercent = Math.round(initialCorrectPickChance * 100);
-            initialChanceSlider.value = String(chancePercent);
-            initialChanceValue.textContent = `${chancePercent}%`;
-            settingsBtn.title = `Chance inicial: ${chancePercent}%`;
+        function formatChancePercent(value) {
+            return `${Math.round(value * 100)}%`;
+        }
+
+        function clampChance(value) {
+            return Math.min(1, Math.max(0, value));
+        }
+
+        function recalculateCurrentPickChance() {
+            correctPickChance = clampChance(initialCorrectPickChance + missedGuessStreak * chanceIncrementOnError);
+        }
+
+        function persistChanceSettings() {
+            localStorage.setItem('hangman_initial_correct_pick_chance', String(initialCorrectPickChance));
+            localStorage.setItem('hangman_error_scaling_correct_pick_chance', String(chanceIncrementOnError));
+        }
+
+        function syncChanceSettingsUI() {
+            const initialChancePercent = Math.round(initialCorrectPickChance * 100);
+            const errorScalingPercent = Math.round(chanceIncrementOnError * 100);
+            initialChanceSlider.value = String(initialChancePercent);
+            initialChanceValue.textContent = formatChancePercent(initialCorrectPickChance);
+            errorScalingSlider.value = String(errorScalingPercent);
+            errorScalingValue.textContent = `+${formatChancePercent(chanceIncrementOnError)}`;
+            currentChanceValue.textContent = `Chance atual: ${formatChancePercent(correctPickChance)}`;
+            settingsBtn.title = `Chance inicial: ${initialChancePercent}% | Escalamento por erro: +${errorScalingPercent}%`;
+        }
+
+        function updateChanceSettingFromSlider(slider) {
+            const value = Number(slider.value);
+            if (!Number.isFinite(value)) return;
+            if (slider === initialChanceSlider) {
+                initialCorrectPickChance = clampChance(value / 100);
+            } else {
+                chanceIncrementOnError = clampChance(value / 100);
+            }
+            recalculateCurrentPickChance();
+            syncChanceSettingsUI();
         }
 
         function setupSettingsPanel() {
-            syncInitialChanceUI();
+            syncChanceSettingsUI();
 
             settingsBtn.onclick = () => {
                 rankActionsPanel.classList.remove('open');
@@ -900,17 +948,12 @@
                 settingsPanel.classList.toggle('open');
             };
 
-            initialChanceSlider.addEventListener('input', (event) => {
-                const value = Number(event.target.value);
-                if (!Number.isFinite(value)) return;
-                initialCorrectPickChance = Math.min(1, Math.max(0, value / 100));
-                initialChanceValue.textContent = `${Math.round(value)}%`;
-            });
-
-            initialChanceSlider.addEventListener('change', () => {
-                localStorage.setItem('hangman_initial_correct_pick_chance', String(initialCorrectPickChance));
-                correctPickChance = initialCorrectPickChance;
-                syncInitialChanceUI();
+            [initialChanceSlider, errorScalingSlider].forEach((slider) => {
+                slider.addEventListener('input', () => updateChanceSettingFromSlider(slider));
+                slider.addEventListener('change', () => {
+                    updateChanceSettingFromSlider(slider);
+                    persistChanceSettings();
+                });
             });
         }
 
@@ -934,8 +977,10 @@
             currentHint = randomEntry.hint;
             guessedLetters = [];
             mistakes = 0;
+            missedGuessStreak = 0;
             isGameOver = false;
             correctPickChance = initialCorrectPickChance;
+            syncChanceSettingsUI();
             clearTimeout(autoContinueModalTimeout);
             modal.classList.remove('open');
             modal.classList.add('closing');
@@ -973,12 +1018,16 @@
             guessedLetters.push(char);
             element.classList.add('used');
             if (currentWord.includes(char)) {
+                missedGuessStreak = 0;
                 correctPickChance = initialCorrectPickChance;
+                syncChanceSettingsUI();
                 updateWordDisplay();
             } else {
                 playComfortStringPressSound();
                 mistakes++;
+                missedGuessStreak++;
                 correctPickChance = Math.min(1, correctPickChance + chanceIncrementOnError);
+                syncChanceSettingsUI();
                 if (mistakes <= maxMistakes) {
                     hangmanParts[mistakes - 1].classList.add('visible');
                 }
