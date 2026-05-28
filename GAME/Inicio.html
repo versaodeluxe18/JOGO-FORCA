@@ -261,7 +261,7 @@
     <button
         id="music-control-btn"
         type="button"
-        class="fixed top-3 right-3 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition"
+        class="fixed top-3 right-3 z-[120] w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition"
         aria-label="Controlar volume da música de fundo"
         title="Música: 5%"
     >
@@ -271,7 +271,7 @@
     <button
         id="rank-actions-btn"
         type="button"
-        class="fixed top-3 right-16 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition rotate-2"
+        class="fixed top-3 right-16 z-[120] w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition rotate-2"
         aria-label="Ações de ranking"
         title="Importar ou salvar ranking"
     >
@@ -280,21 +280,21 @@
     <button
         id="settings-btn"
         type="button"
-        class="fixed top-3 right-28 z-50 w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition -rotate-2"
+        class="fixed top-3 right-28 z-[120] w-10 h-10 rounded-full paper-bg flex items-center justify-center text-sm font-bold hover:scale-105 transition -rotate-2"
         aria-label="Configurações"
         title="Configurações da jogada automática"
     >
         ⚙️
     </button>
 
-    <div id="rank-actions-panel" class="fixed top-16 right-16 z-50 paper-bg p-2 w-48 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+    <div id="rank-actions-panel" class="fixed top-16 right-16 z-[120] paper-bg p-2 w-48 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <p class="text-[10px] font-bold uppercase mb-2">Ranking</p>
         <div class="flex flex-col gap-1">
             <button id="save-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Salvar rank atual</button>
             <button id="import-rank-btn" class="paper-bg px-2 py-1 text-[10px] uppercase font-bold hover:bg-black hover:text-white transition">Importar rank</button>
         </div>
     </div>
-    <div id="settings-panel" class="fixed top-16 right-28 z-50 paper-bg p-2 w-56 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+    <div id="settings-panel" class="fixed top-16 right-28 z-[120] paper-bg p-2 w-56 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <p class="text-[10px] font-bold uppercase mb-2">Configurações</p>
         <label for="initial-chance-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Chance inicial de acerto</label>
         <input id="initial-chance-slider" type="range" min="0" max="100" step="1" value="5" class="w-full">
@@ -303,7 +303,7 @@
 
     <input id="rank-import-input" type="file" accept="application/json" class="hidden">
 
-    <div id="music-volume-panel" class="fixed top-16 right-3 z-50 paper-bg p-2 w-40 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
+    <div id="music-volume-panel" class="fixed top-16 right-3 z-[120] paper-bg p-2 w-40 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <label for="music-volume-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Volume</label>
         <input id="music-volume-slider" type="range" min="0" max="100" step="1" value="5" class="w-full">
         <p id="music-volume-value" class="text-[10px] mt-1 text-right font-bold">5%</p>
