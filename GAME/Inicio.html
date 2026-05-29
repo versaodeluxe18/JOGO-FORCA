@@ -199,6 +199,28 @@
             cursor: pointer;
         }
 
+        .narration-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .narration-toggle input {
+            accent-color: #1a1a1a;
+            cursor: pointer;
+        }
+
+        #narration-now-playing {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-8px) rotate(1deg);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        #narration-now-playing.visible {
+            opacity: 1;
+            transform: translateY(0) rotate(-1deg);
+        }
+
         @keyframes panelPulse {
             0% { transform: translateY(-8px) scale(0.95) rotate(-3deg); }
             70% { transform: translateY(1px) scale(1.01) rotate(1deg); }
@@ -311,6 +333,13 @@
     </div>
     <div id="settings-panel" class="fixed top-16 right-28 z-[120] paper-bg p-3 w-64 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <p class="text-[10px] font-bold uppercase mb-2">Configurações da jogada automática</p>
+        <div class="mb-3 pb-2 border-b border-dashed border-black">
+            <label for="show-narration-name-toggle" class="narration-toggle flex items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-wide">
+                <span>Mostrar narração atual</span>
+                <input id="show-narration-name-toggle" type="checkbox" class="w-4 h-4">
+            </label>
+            <p id="show-narration-name-value" class="text-[10px] mt-1 text-right font-bold">Desativado</p>
+        </div>
         <label for="initial-chance-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Chance inicial de acerto</label>
         <input id="initial-chance-slider" type="range" min="0" max="100" step="1" value="5" class="w-full">
         <p id="initial-chance-value" class="text-[10px] mt-1 mb-3 text-right font-bold">5%</p>
@@ -334,6 +363,11 @@
     </div>
 
     <input id="rank-import-input" type="file" accept="application/json" class="hidden">
+
+    <div id="narration-now-playing" class="fixed top-3 left-3 z-[120] paper-bg p-2 max-w-[70vw] md:max-w-xs text-[10px] md:text-xs font-bold uppercase" aria-live="polite" aria-atomic="true">
+        <span class="block text-[8px] md:text-[10px] opacity-70">Narração atual</span>
+        <span id="narration-now-playing-name" class="block truncate">Nenhuma</span>
+    </div>
 
     <div id="music-volume-panel" class="fixed top-16 right-3 z-[120] paper-bg p-2 w-40 opacity-0 pointer-events-none transform -translate-y-2 scale-95 transition-all duration-300">
         <label for="music-volume-slider" class="block text-[10px] font-bold uppercase mb-1 tracking-wide">Volume</label>
@@ -452,6 +486,7 @@
         const storedErrorScalingChance = Number(localStorage.getItem('hangman_error_scaling_correct_pick_chance'));
         const storedAutoDelayMinSecondsValue = localStorage.getItem('hangman_auto_delay_min_seconds');
         const storedAutoDelayMaxSecondsValue = localStorage.getItem('hangman_auto_delay_max_seconds');
+        const storedShowNarrationName = localStorage.getItem('hangman_show_narration_name');
         const storedAutoDelayMinSeconds = Number(storedAutoDelayMinSecondsValue);
         const storedAutoDelayMaxSeconds = Number(storedAutoDelayMaxSecondsValue);
         const AUTO_DELAY_MIN_SECONDS = 1;
@@ -469,6 +504,7 @@
         let autoDelayMaxSeconds = clampAutoDelaySeconds(
             storedAutoDelayMaxSecondsValue !== null && Number.isFinite(storedAutoDelayMaxSeconds) ? storedAutoDelayMaxSeconds : 10
         );
+        let showNarrationName = storedShowNarrationName === 'true';
         if (autoDelayMaxSeconds < autoDelayMinSeconds) autoDelayMaxSeconds = autoDelayMinSeconds;
         let missedGuessStreak = 0;
         let autoPlayTimeout = null;
@@ -556,6 +592,10 @@
         const autoDelayMaxSlider = document.getElementById('auto-delay-max-slider');
         const autoDelayMaxValue = document.getElementById('auto-delay-max-value');
         const autoDelayRangeValue = document.getElementById('auto-delay-range-value');
+        const showNarrationNameToggle = document.getElementById('show-narration-name-toggle');
+        const showNarrationNameValue = document.getElementById('show-narration-name-value');
+        const narrationNowPlaying = document.getElementById('narration-now-playing');
+        const narrationNowPlayingName = document.getElementById('narration-now-playing-name');
         const saveRankBtn = document.getElementById('save-rank-btn');
         const importRankBtn = document.getElementById('import-rank-btn');
         const rankImportInput = document.getElementById('rank-import-input');
@@ -807,9 +847,27 @@
             }, FILL_IDLE_NARRATION_DELAY_MS);
         }
 
+        function getNarrationDisplayName(audioPath) {
+            if (!audioPath) return 'Nenhuma';
+            const fileName = audioPath.split('/').pop() || audioPath;
+            const decodedName = decodeURIComponent(fileName);
+            return decodedName.replace(/\.[^/.]+$/, '');
+        }
+
+        function syncNarrationNameDisplay() {
+            const activeAudioPath = activeNarrationAudio?.dataset?.narrationPath || '';
+            const shouldShow = showNarrationName && Boolean(activeAudioPath);
+            narrationNowPlayingName.textContent = getNarrationDisplayName(activeAudioPath);
+            narrationNowPlaying.classList.toggle('visible', shouldShow);
+            narrationNowPlaying.setAttribute('aria-hidden', String(!shouldShow));
+            showNarrationNameToggle.checked = showNarrationName;
+            showNarrationNameValue.textContent = showNarrationName ? 'Ativado' : 'Desativado';
+        }
+
         function playNextNarrationFromQueue() {
             if (activeNarrationAudio) return;
             if (narrationQueue.length === 0) {
+                syncNarrationNameDisplay();
                 scheduleIdleFillNarration();
                 return;
             }
@@ -817,11 +875,14 @@
             clearIdleNarrationTimeout();
             const nextAudioPath = narrationQueue.shift();
             const narrationAudio = new Audio(nextAudioPath);
+            narrationAudio.dataset.narrationPath = nextAudioPath;
             activeNarrationAudio = narrationAudio;
+            syncNarrationNameDisplay();
 
             narrationAudio.addEventListener('ended', () => {
                 if (activeNarrationAudio === narrationAudio) {
                     activeNarrationAudio = null;
+                    syncNarrationNameDisplay();
                 }
                 playNextNarrationFromQueue();
             });
@@ -829,6 +890,7 @@
             narrationAudio.addEventListener('error', () => {
                 if (activeNarrationAudio === narrationAudio) {
                     activeNarrationAudio = null;
+                    syncNarrationNameDisplay();
                 }
                 playNextNarrationFromQueue();
             });
@@ -836,6 +898,7 @@
             narrationAudio.play().catch(() => {
                 if (activeNarrationAudio === narrationAudio) {
                     activeNarrationAudio = null;
+                    syncNarrationNameDisplay();
                 }
                 playNextNarrationFromQueue();
             });
@@ -1160,12 +1223,19 @@
         function setupSettingsPanel() {
             syncAutoDelaySettingsUI();
             syncChanceSettingsUI();
+            syncNarrationNameDisplay();
 
             settingsBtn.onclick = () => {
                 rankActionsPanel.classList.remove('open');
                 musicVolumePanel.classList.remove('open');
                 settingsPanel.classList.toggle('open');
             };
+
+            showNarrationNameToggle.addEventListener('change', () => {
+                showNarrationName = showNarrationNameToggle.checked;
+                localStorage.setItem('hangman_show_narration_name', String(showNarrationName));
+                syncNarrationNameDisplay();
+            });
 
             [initialChanceSlider, errorScalingSlider].forEach((slider) => {
                 slider.addEventListener('input', () => updateChanceSettingFromSlider(slider));
