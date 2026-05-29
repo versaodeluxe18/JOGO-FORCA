@@ -507,16 +507,24 @@
             "narracao/fechamento/Generated Audio May 24, 2026 - 11_14PM.wav"
         ];
         const fillNarrations = [
-            "narracao/enchendo/Generated Audio 1.wav",
-            "narracao/enchendo/Generated Audio 2.wav",
-            "narracao/enchendo/Generated Audio 3.wav"
+            "narracao/enchendo/Generated Audio May 27, 2026 - 3_33AM.wav",
+            "narracao/enchendo/Generated Audio May 27, 2026 - 3_54AM.wav",
+            "narracao/enchendo/Generated Audio May 27, 2026 - 4_13AM.wav",
+            "narracao/enchendo/Generated Audio May 27, 2026 - 5_04AM.wav",
+            "narracao/enchendo/Generated Audio May 27, 2026 - 5_24AM.wav",
+            "narracao/enchendo/Generated Audio May 27, 2026 - 5_29AM.wav",
+            "narracao/enchendo/promocao1.wav",
+            "narracao/enchendo/promocao2.wav"
         ];
         const victoryNarrations = [
             "narracao/vitoria/Generated Audio 1.wav",
             "narracao/vitoria/Generated Audio 2.wav",
             "narracao/vitoria/Generated Audio 3.wav"
         ];
+        const FILL_IDLE_NARRATION_DELAY_MS = 20000;
         let activeNarrationAudio = null;
+        let idleNarrationTimeout = null;
+        let hasGameStarted = false;
         const narrationQueue = [];
 
         const wordDisplay = document.getElementById('word-display');
@@ -777,9 +785,36 @@
             return audioPaths[Math.floor(Math.random() * audioPaths.length)];
         }
 
-        function playNextNarrationFromQueue() {
-            if (activeNarrationAudio || narrationQueue.length === 0) return;
+        function clearIdleNarrationTimeout() {
+            clearDeadlineTimeout(idleNarrationTimeout);
+            idleNarrationTimeout = null;
+        }
 
+        function scheduleIdleFillNarration() {
+            clearIdleNarrationTimeout();
+            if (!hasGameStarted || activeNarrationAudio || narrationQueue.length > 0) return;
+
+            idleNarrationTimeout = createDeadlineTimeout(() => {
+                idleNarrationTimeout = null;
+                if (!hasGameStarted) return;
+
+                if (activeNarrationAudio || narrationQueue.length > 0) {
+                    scheduleIdleFillNarration();
+                    return;
+                }
+
+                playRandomNarration(fillNarrations);
+            }, FILL_IDLE_NARRATION_DELAY_MS);
+        }
+
+        function playNextNarrationFromQueue() {
+            if (activeNarrationAudio) return;
+            if (narrationQueue.length === 0) {
+                scheduleIdleFillNarration();
+                return;
+            }
+
+            clearIdleNarrationTimeout();
             const nextAudioPath = narrationQueue.shift();
             const narrationAudio = new Audio(nextAudioPath);
             activeNarrationAudio = narrationAudio;
@@ -808,6 +843,7 @@
 
         function playNarration(audioPath) {
             if (!audioPath) return;
+            clearIdleNarrationTimeout();
             narrationQueue.push(audioPath);
             playNextNarrationFromQueue();
         }
@@ -1170,6 +1206,7 @@
             mistakes = 0;
             missedGuessStreak = 0;
             isGameOver = false;
+            hasGameStarted = true;
             correctPickChance = initialCorrectPickChance;
             syncChanceSettingsUI();
             clearDeadlineTimeout(autoContinueModalTimeout);
