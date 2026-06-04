@@ -36,22 +36,23 @@
             z-index: 0;
             pointer-events: none;
             overflow: hidden;
+            isolation: isolate;
         }
 
         .gamer-background span {
             position: absolute;
-            left: var(--x);
+            left: 0;
             top: var(--y);
-            color: var(--background-mark);
-            opacity: var(--opacity, 0.42);
+            color: #4d4d4d;
+            opacity: var(--opacity, 0.46);
             font-family: Arial, Helvetica, sans-serif;
             font-size: var(--size, 24px);
             font-weight: 700;
             letter-spacing: -0.05em;
             line-height: 1;
-            text-shadow: 0 0 10px rgba(51, 51, 51, 0.16);
-            transform: translate3d(0, 0, 0) rotate(var(--rotate, 0deg));
-            animation: gamerFloat var(--duration, 34s) ease-in-out var(--delay, 0s) infinite alternate;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.05), 0 0 18px rgba(0, 208, 132, 0.08);
+            transform: translate3d(var(--start-x, 110vw), 0, 0) rotate(var(--rotate, 0deg));
+            animation: gamerSlide var(--duration, 28s) linear var(--delay, 0s) infinite;
             will-change: transform;
         }
 
@@ -70,7 +71,7 @@
             top: 50%;
             width: 38%;
             height: 100%;
-            background: var(--background-mark);
+            background: currentColor;
             border-radius: 2px;
             transform: translate(-50%, -50%);
         }
@@ -83,7 +84,7 @@
         .gamer-background .controller {
             width: calc(var(--size, 24px) * 1.35);
             height: calc(var(--size, 24px) * 0.78);
-            border: 3px solid var(--background-mark);
+            border: 3px solid currentColor;
             border-radius: 45% 45% 50% 50%;
         }
 
@@ -94,19 +95,19 @@
             top: 50%;
             width: 5px;
             height: 5px;
-            background: var(--background-mark);
+            background: currentColor;
             border-radius: 50%;
             transform: translateY(-50%);
         }
 
         .gamer-background .controller::before {
             left: 22%;
-            box-shadow: 6px 0 0 var(--background-mark), 3px -3px 0 var(--background-mark), 3px 3px 0 var(--background-mark);
+            box-shadow: 6px 0 0 currentColor, 3px -3px 0 currentColor, 3px 3px 0 currentColor;
         }
 
         .gamer-background .controller::after {
             right: 22%;
-            box-shadow: -7px 0 0 var(--background-mark);
+            box-shadow: -7px 0 0 currentColor;
         }
 
         header,
@@ -115,15 +116,12 @@
             z-index: 1;
         }
 
-        @keyframes gamerFloat {
-            0% {
-                transform: translate3d(0, 0, 0) rotate(var(--rotate, 0deg));
+        @keyframes gamerSlide {
+            from {
+                transform: translate3d(var(--start-x, 110vw), 0, 0) rotate(var(--rotate, 0deg));
             }
-            50% {
-                transform: translate3d(calc(var(--drift-x, 24px) * 0.45), calc(var(--drift-y, -22px) * 0.45), 0) rotate(calc(var(--rotate, 0deg) + 7deg));
-            }
-            100% {
-                transform: translate3d(var(--drift-x, 24px), var(--drift-y, -22px), 0) rotate(calc(var(--rotate, 0deg) - 8deg));
+            to {
+                transform: translate3d(var(--end-x, -35vw), 0, 0) rotate(calc(var(--rotate, 0deg) + var(--spin, 18deg)));
             }
         }
 
@@ -391,16 +389,22 @@
 </head>
 <body class="p-2 md:p-4">
     <div class="gamer-background" aria-hidden="true">
-        <span style="--x: 7%; --y: 14%; --size: 22px; --rotate: -12deg; --drift-x: 34px; --drift-y: -26px; --duration: 38s; --opacity: 0.44;">△</span>
-        <span style="--x: 18%; --y: 78%; --size: 20px; --rotate: 8deg; --drift-x: -28px; --drift-y: 24px; --duration: 34s; --delay: -8s; --opacity: 0.4;">✕</span>
-        <span style="--x: 29%; --y: 34%; --size: 18px; --rotate: 15deg; --drift-x: 25px; --drift-y: 30px; --duration: 42s; --delay: -13s; --opacity: 0.38;">□</span>
-        <span class="dpad" style="--x: 38%; --y: 10%; --size: 25px; --rotate: -6deg; --drift-x: -30px; --drift-y: 22px; --duration: 39s; --delay: -4s; --opacity: 0.32;"></span>
-        <span style="--x: 49%; --y: 84%; --size: 21px; --rotate: -10deg; --drift-x: 30px; --drift-y: -20px; --duration: 36s; --delay: -18s; --opacity: 0.39;">○</span>
-        <span class="controller" style="--x: 62%; --y: 23%; --size: 24px; --rotate: 11deg; --drift-x: -24px; --drift-y: -28px; --duration: 41s; --delay: -10s; --opacity: 0.32;"></span>
-        <span style="--x: 74%; --y: 70%; --size: 22px; --rotate: 18deg; --drift-x: 26px; --drift-y: 25px; --duration: 35s; --delay: -16s; --opacity: 0.42;">GG</span>
-        <span class="dpad" style="--x: 88%; --y: 40%; --size: 22px; --rotate: 10deg; --drift-x: -35px; --drift-y: -18px; --duration: 40s; --delay: -6s; --opacity: 0.3;"></span>
-        <span style="--x: 12%; --y: 48%; --size: 17px; --rotate: -18deg; --drift-x: 29px; --drift-y: 18px; --duration: 33s; --delay: -21s; --opacity: 0.34;">XP</span>
-        <span style="--x: 82%; --y: 12%; --size: 20px; --rotate: -5deg; --drift-x: -22px; --drift-y: 32px; --duration: 44s; --delay: -12s; --opacity: 0.38;">▶</span>
+        <span style="--y: 6%; --size: 22px; --rotate: -12deg; --duration: 28s; --delay: -2s; --opacity: 0.5; --spin: 16deg;">△</span>
+        <span style="--y: 12%; --size: 18px; --rotate: 8deg; --duration: 31s; --delay: -16s; --opacity: 0.42; --spin: -14deg;">XP</span>
+        <span class="dpad" style="--y: 18%; --size: 25px; --rotate: -6deg; --duration: 36s; --delay: -8s; --opacity: 0.36; --spin: 22deg;"></span>
+        <span style="--y: 23%; --size: 20px; --rotate: -5deg; --duration: 30s; --delay: -24s; --opacity: 0.44; --spin: 10deg;">▶</span>
+        <span class="controller" style="--y: 29%; --size: 25px; --rotate: 11deg; --duration: 38s; --delay: -18s; --opacity: 0.38; --spin: -18deg;"></span>
+        <span style="--y: 34%; --size: 18px; --rotate: 15deg; --duration: 33s; --delay: -11s; --opacity: 0.45; --spin: 14deg;">□</span>
+        <span style="--y: 40%; --size: 22px; --rotate: 10deg; --duration: 29s; --delay: -5s; --opacity: 0.48; --spin: -12deg;">GG</span>
+        <span style="--y: 46%; --size: 17px; --rotate: -18deg; --duration: 35s; --delay: -27s; --opacity: 0.4; --spin: 20deg;">WASD</span>
+        <span class="dpad" style="--y: 52%; --size: 22px; --rotate: 10deg; --duration: 32s; --delay: -14s; --opacity: 0.34; --spin: -16deg;"></span>
+        <span style="--y: 57%; --size: 21px; --rotate: -10deg; --duration: 37s; --delay: -30s; --opacity: 0.44; --spin: 12deg;">○</span>
+        <span style="--y: 63%; --size: 19px; --rotate: 13deg; --duration: 28s; --delay: -20s; --opacity: 0.43; --spin: -10deg;">1UP</span>
+        <span style="--y: 69%; --size: 22px; --rotate: 18deg; --duration: 34s; --delay: -7s; --opacity: 0.47; --spin: 18deg;">✕</span>
+        <span class="controller" style="--y: 75%; --size: 22px; --rotate: -9deg; --duration: 39s; --delay: -34s; --opacity: 0.34; --spin: 15deg;"></span>
+        <span style="--y: 81%; --size: 20px; --rotate: 7deg; --duration: 31s; --delay: -22s; --opacity: 0.42; --spin: -14deg;">HP</span>
+        <span style="--y: 87%; --size: 21px; --rotate: -14deg; --duration: 36s; --delay: -12s; --opacity: 0.4; --spin: 16deg;">★</span>
+        <span style="--y: 93%; --size: 18px; --rotate: 5deg; --duration: 33s; --delay: -28s; --opacity: 0.38; --spin: -12deg;">LVL</span>
     </div>
     <div id="bot-cursor" class="bot-cursor"></div>
     <div id="start-screen" class="start-screen">
