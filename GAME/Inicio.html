@@ -1053,20 +1053,52 @@
             playNarration(randomPath);
         }
 
+        const questionNarrationExtensions = ['wav', 'mp3', 'ogg', 'm4a'];
+
+        function buildQuestionNarrationPath(questionText, extension) {
+            return `narracao/pergunta/${encodeURIComponent(questionText)}.${extension}`;
+        }
+
+        async function audioFileExists(audioPath) {
+            try {
+                const headResponse = await fetch(audioPath, { method: 'HEAD' });
+                if (headResponse.ok) return true;
+                if (![405, 501].includes(headResponse.status)) return false;
+            } catch (_) {
+                return false;
+            }
+
+            try {
+                const getResponse = await fetch(audioPath, {
+                    method: 'GET',
+                    headers: { Range: 'bytes=0-0' }
+                });
+                return getResponse.ok || getResponse.status === 206;
+            } catch (_) {
+                return false;
+            }
+        }
+
         async function resolveQuestionNarrationPath(questionItem, questionIndex) {
             const explicitAudio = String(questionItem.audio || '').trim();
             if (explicitAudio) return explicitAudio;
 
-            const possiblePaths = [
+            const questionText = String(questionItem.pergunta || '').trim();
+            const possiblePaths = [];
+
+            if (questionText) {
+                possiblePaths.push(...questionNarrationExtensions.map((extension) => (
+                    buildQuestionNarrationPath(questionText, extension)
+                )));
+            }
+
+            possiblePaths.push(
                 `narracao/pergunta/${questionIndex + 1}.wav`,
                 `narracao/pergunta/${questionIndex + 1}.mp3`
-            ];
+            );
 
             for (const path of possiblePaths) {
-                try {
-                    const response = await fetch(path, { method: 'HEAD' });
-                    if (response.ok) return path;
-                } catch (_) {}
+                if (await audioFileExists(path)) return path;
             }
 
             return null;
