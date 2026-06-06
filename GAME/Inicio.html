@@ -1100,9 +1100,29 @@
             const normalizedQuestion = normalizeNarrationText(questionText);
             if (!normalizedQuestion) return null;
 
-            return questionNarrations.find((audioPath) => (
-                normalizeNarrationText(getAudioPathBaseName(audioPath)) === normalizedQuestion
-            )) || null;
+            const normalizedManifestEntries = questionNarrations.map((audioPath) => ({
+                audioPath,
+                normalizedManifest: normalizeNarrationText(getAudioPathBaseName(audioPath))
+            }));
+
+            const exactMatch = normalizedManifestEntries.find(({ normalizedManifest }) => (
+                normalizedManifest === normalizedQuestion
+            ));
+            if (exactMatch) return exactMatch.audioPath;
+
+            const inclusionMatch = normalizedManifestEntries.find(({ normalizedManifest }) => (
+                normalizedManifest.includes(normalizedQuestion)
+                || normalizedQuestion.includes(normalizedManifest)
+            ));
+            if (inclusionMatch) return inclusionMatch.audioPath;
+
+            console.debug('[narração-pergunta] Nenhuma correspondência no manifesto.', {
+                questionText,
+                normalizedQuestion,
+                normalizedManifestEntries
+            });
+
+            return null;
         }
 
         function buildQuestionNarrationPath(questionText, extension) {
