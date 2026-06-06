@@ -684,10 +684,31 @@
             "narracao/enchendo/Generated Audio May 27, 2026 - 3_54AM.wav",
             "narracao/enchendo/Generated Audio May 27, 2026 - 4_13AM.wav",
             "narracao/enchendo/Generated Audio May 27, 2026 - 5_04AM.wav",
-            "narracao/enchendo/Generated Audio May 27, 2026 - 5_24AM.wav",
             "narracao/enchendo/Generated Audio May 27, 2026 - 5_29AM.wav",
             "narracao/enchendo/promocao1.wav",
             "narracao/enchendo/promocao2.wav"
+        ];
+        const questionNarrations = [
+            "narracao/pergunta/A princesa que precisa ser salva.wav",
+            "narracao/pergunta/Battle Royale famoso por construir.wav",
+            "narracao/pergunta/Blocos e sobrevivência.wav",
+            "narracao/pergunta/Comedor de pastilhas amarelo.wav",
+            "narracao/pergunta/Console da Sony.wav",
+            "narracao/pergunta/Criadora do Mario.wav",
+            "narracao/pergunta/Encanador da Nintendo.wav",
+            "narracao/pergunta/FPS tático da Riot Games.wav",
+            "narracao/pergunta/Geralt de Rivia é o protagonista.wav",
+            "narracao/pergunta/Hero Shooter da Blizzard.wav",
+            "narracao/pergunta/Mascote da Sega.wav",
+            "narracao/pergunta/Master Chief é o ícone da Xbox.wav",
+            "narracao/pergunta/O Pokémon mais famoso.wav",
+            "narracao/pergunta/O ouriço mais rápido do mundo.wav",
+            "narracao/pergunta/Plataforma de jogos criada por usuários.wav",
+            "narracao/pergunta/Portátil clássico dos anos 90.wav",
+            "narracao/pergunta/Protagonista de God of War.wav",
+            "narracao/pergunta/RPG de ação em mundo aberto gratuito.wav",
+            "narracao/pergunta/Samus Aran é a protagonista.wav",
+            "narracao/pergunta/Venceu o GOTY em 2022.wav"
         ];
         const victoryNarrations = [
             "narracao/vitoria/Generated Audio 1.wav",
@@ -1055,8 +1076,41 @@
 
         const questionNarrationExtensions = ['wav', 'mp3', 'ogg', 'm4a'];
 
+        function normalizeNarrationText(text) {
+            return String(text || '')
+                .replace(/^\s*dica\s*:\s*/i, '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\.[a-z0-9]+$/i, '')
+                .replace(/[^a-z0-9]+/gi, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        function getAudioPathBaseName(audioPath) {
+            const fileName = String(audioPath || '').split('/').pop() || '';
+            try {
+                return decodeURIComponent(fileName);
+            } catch (_) {
+                return fileName;
+            }
+        }
+
+        function getMatchingQuestionNarrationFromManifest(questionText) {
+            const normalizedQuestion = normalizeNarrationText(questionText);
+            if (!normalizedQuestion) return null;
+
+            return questionNarrations.find((audioPath) => (
+                normalizeNarrationText(getAudioPathBaseName(audioPath)) === normalizedQuestion
+            )) || null;
+        }
+
         function buildQuestionNarrationPath(questionText, extension) {
             return `narracao/pergunta/${encodeURIComponent(questionText)}.${extension}`;
+        }
+
+        function buildQuestionNarrationPathWithSpacedExtension(questionText, extension) {
+            return `narracao/pergunta/${encodeURIComponent(`${questionText} `)}.${extension}`;
         }
 
         async function audioFileExists(audioPath) {
@@ -1065,7 +1119,7 @@
                 if (headResponse.ok) return true;
                 if (![405, 501].includes(headResponse.status)) return false;
             } catch (_) {
-                return false;
+                // Alguns servidores/protocolos bloqueiam HEAD. Tenta GET parcial antes de desistir.
             }
 
             try {
@@ -1087,9 +1141,13 @@
             const possiblePaths = [];
 
             if (questionText) {
-                possiblePaths.push(...questionNarrationExtensions.map((extension) => (
-                    buildQuestionNarrationPath(questionText, extension)
-                )));
+                const manifestMatch = getMatchingQuestionNarrationFromManifest(questionText);
+                if (manifestMatch) return manifestMatch;
+
+                possiblePaths.push(...questionNarrationExtensions.flatMap((extension) => ([
+                    buildQuestionNarrationPath(questionText, extension),
+                    buildQuestionNarrationPathWithSpacedExtension(questionText, extension)
+                ])));
             }
 
             possiblePaths.push(
@@ -1102,6 +1160,10 @@
             }
 
             return null;
+        }
+
+        function getNarrationForQuestion(questionEntry) {
+            return questionEntry?.narration || getRandomAudioPath(fillNarrations);
         }
 
         async function init() {
@@ -1458,9 +1520,8 @@
             scheduleAutoGuess();
             if (playEntryNarration) {
                 playRandomNarration(entryNarrations);
-            } else {
-                playNarration(randomEntry.narration || getRandomAudioPath(fillNarrations));
             }
+            playNarration(getNarrationForQuestion(randomEntry));
         }
 
         function updateWordDisplay() {
