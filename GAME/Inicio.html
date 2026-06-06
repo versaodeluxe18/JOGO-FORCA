@@ -1106,11 +1106,11 @@
         }
 
         function buildQuestionNarrationPath(questionText, extension) {
-            return `narracao/pergunta/${encodeURIComponent(questionText)}.${extension}`;
+            return `narracao/pergunta/${questionText}.${extension}`;
         }
 
         function buildQuestionNarrationPathWithSpacedExtension(questionText, extension) {
-            return `narracao/pergunta/${encodeURIComponent(`${questionText} `)}.${extension}`;
+            return `narracao/pergunta/${questionText} .${extension}`;
         }
 
         async function audioFileExists(audioPath) {
