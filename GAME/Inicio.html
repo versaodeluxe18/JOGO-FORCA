@@ -978,9 +978,59 @@
             document.getElementById('leg-r')
         ];
 
+  const recentlyPlayedAudiosByFolder = new Map();
+
+        function getAudioFolderPath(audioPath) {
+            const normalizedPath = String(audioPath || '').replace(/\\/g, '/');
+            const lastSlashIndex = normalizedPath.lastIndexOf('/');
+            return lastSlashIndex >= 0 ? normalizedPath.slice(0, lastSlashIndex) : '';
+        }
+
+        function getUniqueAudioPaths(audioPaths) {
+            return [...new Set((audioPaths || []).filter(Boolean))];
+        }
+
+        
         function getRandomAudioPath(audioPaths) {
-            if (!Array.isArray(audioPaths) || audioPaths.length === 0) return null;
-            return audioPaths[Math.floor(Math.random() * audioPaths.length)];
+            const uniqueAudioPaths = getUniqueAudioPaths(audioPaths);
+            if (uniqueAudioPaths.length === 0) return null;
+            if (uniqueAudioPaths.length === 1) return uniqueAudioPaths[0];
+
+            const involvedFolders = [...new Set(uniqueAudioPaths.map(getAudioFolderPath))];
+            involvedFolders.forEach((folderPath) => {
+                const folderAudioPaths = uniqueAudioPaths.filter((audioPath) => getAudioFolderPath(audioPath) === folderPath);
+                const recentlyPlayed = recentlyPlayedAudiosByFolder.get(folderPath) || [];
+                const stillRelevantRecentlyPlayed = recentlyPlayed.filter((audioPath) => folderAudioPaths.includes(audioPath));
+
+                if (stillRelevantRecentlyPlayed.length >= folderAudioPaths.length) {
+                    const lastPlayedAudio = stillRelevantRecentlyPlayed[stillRelevantRecentlyPlayed.length - 1];
+                    recentlyPlayedAudiosByFolder.set(folderPath, lastPlayedAudio ? [lastPlayedAudio] : []);
+                } else {
+                    recentlyPlayedAudiosByFolder.set(folderPath, stillRelevantRecentlyPlayed);
+                }
+            });
+
+            let availableAudioPaths = uniqueAudioPaths.filter((audioPath) => {
+                const folderPath = getAudioFolderPath(audioPath);
+                const recentlyPlayed = recentlyPlayedAudiosByFolder.get(folderPath) || [];
+                return !recentlyPlayed.includes(audioPath);
+            });
+
+            if (availableAudioPaths.length === 0) {
+                involvedFolders.forEach((folderPath) => recentlyPlayedAudiosByFolder.set(folderPath, []));
+                availableAudioPaths = uniqueAudioPaths;
+            }
+
+            const selectedAudioPath = availableAudioPaths[Math.floor(Math.random() * availableAudioPaths.length)];
+            const selectedFolderPath = getAudioFolderPath(selectedAudioPath);
+            const selectedFolderAudioPaths = uniqueAudioPaths.filter((audioPath) => getAudioFolderPath(audioPath) === selectedFolderPath);
+            const updatedRecentlyPlayed = [
+                ...(recentlyPlayedAudiosByFolder.get(selectedFolderPath) || []).filter((audioPath) => selectedFolderAudioPaths.includes(audioPath)),
+                selectedAudioPath
+            ];
+            recentlyPlayedAudiosByFolder.set(selectedFolderPath, updatedRecentlyPlayed);
+
+            return selectedAudioPath;
         }
 
         function clearIdleNarrationTimeout() {
@@ -1272,18 +1322,13 @@
         }
 
         function setupBackgroundMusic() {
+            const firstTrackPath = getRandomAudioPath(backgroundTracks);
+            currentTrackIndex = Math.max(0, backgroundTracks.indexOf(firstTrackPath));
             backgroundAudio.src = backgroundTracks[currentTrackIndex];
             backgroundAudio.preload = "auto";
             backgroundAudio.addEventListener('ended', () => {
-                if (backgroundTracks.length > 1) {
-                    let nextTrackIndex = currentTrackIndex;
-                    while (nextTrackIndex === currentTrackIndex) {
-                        nextTrackIndex = Math.floor(Math.random() * backgroundTracks.length);
-                    }
-                    currentTrackIndex = nextTrackIndex;
-                } else {
-                    currentTrackIndex = 0;
-                }
+               const nextTrackPath = getRandomAudioPath(backgroundTracks);
+                currentTrackIndex = Math.max(0, backgroundTracks.indexOf(nextTrackPath));
                 backgroundAudio.src = backgroundTracks[currentTrackIndex];
                 backgroundAudio.play().catch(() => {});
             });
