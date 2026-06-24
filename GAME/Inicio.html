@@ -688,6 +688,8 @@
             "narracao/enchendo/promocao1.wav",
             "narracao/enchendo/promocao2.wav"
         ];
+        const supportedNarrationExtensions = ['wav', 'mp3', 'ogg', 'm4a'];
+        const victoryNarrationFolder = 'narracao/vitoria/';
         const questionNarrations = [
             "narracao/pergunta/A princesa que precisa ser salva.wav",
             "narracao/pergunta/Battle Royale famoso por construir.wav",
@@ -710,8 +712,8 @@
             "narracao/pergunta/Samus Aran é a protagonista.wav",
             "narracao/pergunta/Venceu o GOTY em 2022.wav"
         ];
-        const victoryNarrations = [
-             "narracao/vitoria/Generated Audio May 27, 2026 - 1_37PM.wav",
+        const fallbackVictoryNarrations = [
+            "narracao/vitoria/Generated Audio May 27, 2026 - 1_37PM.wav",
             "narracao/vitoria/Generated Audio May 27, 2026 - 1_38PM.wav",
             "narracao/vitoria/Generated Audio May 27, 2026 - 1_51PM.wav",
             "narracao/vitoria/Generated Audio May 27, 2026 - 1_56PM.wav",
@@ -1127,7 +1129,52 @@
             playNarration(randomPath);
         }
 
-        const questionNarrationExtensions = ['wav', 'mp3', 'ogg', 'm4a'];
+        function normalizeDiscoveredAudioPath(audioUrl, folderPath) {
+            const pageUrl = new URL(window.location.href);
+            const normalizedFolderPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+
+            if (audioUrl.origin === pageUrl.origin) {
+                const pageDirectoryPath = pageUrl.pathname.replace(/[^/]*$/, '');
+                if (audioUrl.pathname.startsWith(pageDirectoryPath)) {
+                    return decodeURIComponent(audioUrl.pathname.slice(pageDirectoryPath.length));
+                }
+            }
+
+            return `${normalizedFolderPath}${decodeURIComponent(audioUrl.pathname.split('/').pop() || '')}`;
+        }
+
+        function isSupportedNarrationFile(audioPath) {
+            const extension = String(audioPath || '').split('?')[0].split('#')[0].split('.').pop().toLowerCase();
+            return supportedNarrationExtensions.includes(extension);
+        }
+
+        async function discoverAudioPathsInFolder(folderPath, fallbackAudioPaths = []) {
+            try {
+                const normalizedFolderPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+                const response = await fetch(normalizedFolderPath, { cache: 'no-store' });
+                if (!response.ok) return fallbackAudioPaths;
+
+                const html = await response.text();
+                const directoryUrl = new URL(normalizedFolderPath, window.location.href);
+                const documentFromDirectory = new DOMParser().parseFromString(html, 'text/html');
+                const discoveredPaths = [...documentFromDirectory.querySelectorAll('a[href]')]
+                    .map((link) => new URL(link.getAttribute('href'), directoryUrl))
+                    .filter((audioUrl) => isSupportedNarrationFile(audioUrl.pathname))
+                    .map((audioUrl) => normalizeDiscoveredAudioPath(audioUrl, normalizedFolderPath))
+                    .filter((audioPath) => audioPath.startsWith(normalizedFolderPath));
+
+                return getUniqueAudioPaths(discoveredPaths.length > 0 ? discoveredPaths : fallbackAudioPaths);
+            } catch (_) {
+                return fallbackAudioPaths;
+            }
+        }
+
+        async function playRandomNarrationFromFolder(folderPath, fallbackAudioPaths = []) {
+            const audioPaths = await discoverAudioPathsInFolder(folderPath, fallbackAudioPaths);
+            playRandomNarration(audioPaths);
+        }
+
+        const questionNarrationExtensions = supportedNarrationExtensions;
 
         function normalizeNarrationText(text) {
             return String(text || '')
@@ -1651,7 +1698,7 @@
                 title.className = "text-2xl font-bold mb-2 text-green-800";
                 score += 100 + (maxMistakes - mistakes) * 10;
                 scoreDisplay.textContent = score;
-                playRandomNarration(victoryNarrations);
+                playRandomNarrationFromFolder(victoryNarrationFolder, fallbackVictoryNarrations);
             } else {
                 title.textContent = "GAME OVER";
                 title.className = "text-2xl font-bold mb-2 text-red-800";
